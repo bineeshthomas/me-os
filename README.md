@@ -20,7 +20,7 @@ Copy `server/.env.example` to `server/.env` if it doesn't exist.
 
 ## Features
 - **Dashboard** - counts, active project progress, recent notes
-- **Projects** - roadmaps made of step-by-step phases you tick off
+- **Projects** - compact cards, most recently created/updated first; click one to edit its title, description and steps
 - **Notes** - quick notes (create, edit, delete)
 - **Links** - save quick-launch links with a name; they open in a new tab (http/https only)
 - **Widget rail** - Focus Tasks, Calls, Emails, Messages (pick WhatsApp or Teams), Meetings, Reminders (add, tick off, delete; meetings and reminders take a date and time)

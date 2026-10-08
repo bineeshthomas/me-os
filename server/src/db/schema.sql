@@ -54,3 +54,9 @@ CREATE TABLE IF NOT EXISTS links (
   url        TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Projects sort by last activity (created, edited, or any step changed)
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ;
+UPDATE projects SET updated_at = created_at WHERE updated_at IS NULL;
+ALTER TABLE projects ALTER COLUMN updated_at SET DEFAULT now();
+ALTER TABLE projects ALTER COLUMN updated_at SET NOT NULL;

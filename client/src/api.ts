@@ -1,5 +1,5 @@
 export interface Step { id: number; title: string; done: boolean; position: number }
-export interface Project { id: number; title: string; description: string | null; created_at: string; steps: Step[] }
+export interface Project { id: number; title: string; description: string | null; created_at: string; updated_at: string; steps: Step[] }
 export interface Note { id: number; title: string; body: string; created_at: string; updated_at: string }
 export type Kind = 'task' | 'call' | 'email' | 'message' | 'meeting' | 'reminder'
 export type MessageApp = 'whatsapp' | 'teams'
@@ -34,6 +34,8 @@ export const api = {
     req<Project>('POST', '/projects', { title, description, steps }),
   deleteProject: (id: number) => req<void>('DELETE', `/projects/${id}`),
   addStep: (projectId: number, title: string) => req<Step>('POST', `/projects/${projectId}/steps`, { title }),
+  updateProject: (id: number, title: string, description: string) => req<Project>('PATCH', `/projects/${id}`, { title, description }),
+  renameStep: (id: number, title: string) => req<Step>('PATCH', `/steps/${id}`, { title }),
   setStepDone: (id: number, done: boolean) => req<Step>('PATCH', `/steps/${id}`, { done }),
   deleteStep: (id: number) => req<void>('DELETE', `/steps/${id}`),
   items: () => req<Item[]>('GET', '/items'),

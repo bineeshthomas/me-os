@@ -206,3 +206,18 @@ p.card { margin: 0; }
   .stress { flex-wrap: wrap; }
   .stress-label { min-width: 0; }
 }
+
+/* Projects: compact cards + editor */
+.pgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+.pcard { display: flex; flex-direction: column; gap: 6px; text-align: left; padding: 10px 12px; cursor: pointer; font: inherit; color: var(--ink); }
+.pcard:hover { border-color: var(--mint-dark); box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+.pcard b { font-size: 13px; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.pmeta { display: flex; align-items: center; gap: 8px; }
+.pmeta .bar { flex: 1; width: auto; height: 6px; }
+.pdetail { width: min(640px, 94vw); align-self: flex-start; max-height: 86vh; overflow: auto; display: flex; flex-direction: column; gap: 8px; }
+.ptitle { font-size: 16px; font-weight: 700; border-color: transparent; padding: 4px 6px; }
+.ptitle:hover, .stepedit:hover, .pdesc:hover { border-color: var(--line); }
+.pdesc { resize: vertical; border-color: transparent; }
+.stepedit { border-color: transparent; padding: 3px 6px; flex: 1; }
+.done .stepedit { text-decoration: line-through; color: var(--muted); }
+.pfoot { justify-content: flex-end; margin-top: 4px; }

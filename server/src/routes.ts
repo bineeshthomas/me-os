@@ -11,7 +11,7 @@ const PROJECTS_SQL = `
 
 // Projects
 api.get("/projects", async (_req, res) => {
-  const { rows } = await pool.query(`${PROJECTS_SQL} GROUP BY p.id ORDER BY p.created_at DESC`);
+  const { rows } = await pool.query(`${PROJECTS_SQL} GROUP BY p.id ORDER BY p.updated_at DESC, p.id DESC`);
   res.json(rows);
 });
 
@@ -33,7 +33,7 @@ api.post("/projects", async (req, res) => {
 api.patch("/projects/:id", async (req, res) => {
   const { title, description } = req.body ?? {};
   const { rows } = await pool.query(
-    "UPDATE projects SET title = COALESCE($2, title), description = COALESCE($3, description) WHERE id = $1 RETURNING id",
+    "UPDATE projects SET title = COALESCE($2, title), description = COALESCE($3, description), updated_at = now() WHERE id = $1 RETURNING id",
     [req.params.id, title ?? null, description ?? null],
   );
   if (!rows[0]) return res.status(404).json({ error: "not found" });
@@ -55,6 +55,7 @@ api.post("/projects/:id/steps", async (req, res) => {
      VALUES ($1, $2, COALESCE((SELECT MAX(position) + 1 FROM project_steps WHERE project_id = $1), 0)) RETURNING *`,
     [req.params.id, title],
   );
+  await pool.query("UPDATE projects SET updated_at = now() WHERE id = $1", [req.params.id]);
   res.status(201).json(rows[0]);
 });
 
@@ -65,12 +66,14 @@ api.patch("/steps/:id", async (req, res) => {
     [req.params.id, title ?? null, done ?? null],
   );
   if (!rows[0]) return res.status(404).json({ error: "not found" });
+  await pool.query("UPDATE projects SET updated_at = now() WHERE id = $1", [rows[0].project_id]);
   res.json(rows[0]);
 });
 
 api.delete("/steps/:id", async (req, res) => {
-  const { rowCount } = await pool.query("DELETE FROM project_steps WHERE id = $1", [req.params.id]);
-  res.status(rowCount ? 204 : 404).end();
+  const { rows } = await pool.query("DELETE FROM project_steps WHERE id = $1 RETURNING project_id", [req.params.id]);
+  if (rows[0]) await pool.query("UPDATE projects SET updated_at = now() WHERE id = $1", [rows[0].project_id]);
+  res.status(rows[0] ? 204 : 404).end();
 });
 
 // Notes
@@ -109,7 +112,7 @@ api.get("/dashboard", async (_req, res) => {
       (SELECT COUNT(*) FROM notes)::int AS notes,
       (SELECT COUNT(*) FROM project_steps WHERE NOT done)::int AS open_steps,
       (SELECT COUNT(*) FROM project_steps WHERE done)::int AS done_steps`),
-    pool.query(`${PROJECTS_SQL} GROUP BY p.id ORDER BY p.created_at DESC LIMIT 5`),
+    pool.query(`${PROJECTS_SQL} GROUP BY p.id ORDER BY p.updated_at DESC, p.id DESC LIMIT 5`),
     pool.query("SELECT id, title, body, updated_at FROM notes ORDER BY updated_at DESC LIMIT 5"),
   ]);
   res.json({ counts: counts.rows[0], projects: projects.rows, notes: notes.rows });
