@@ -89,7 +89,19 @@ review.put("/review/:date", async (req, res) => {
      RETURNING ${REVIEW_COLS}`,
     [date, ...vals],
   );
-  res.json(rows[0]);
+
+  // Finishing the day rolls unfinished dated items (e.g. reminders) over to the next day, keeping their time.
+  // Undated items aren't tied to a day, so they simply stay open. Meetings are events and never move.
+  let rolled = 0;
+  if (b.complete === true) {
+    const r = await pool.query(
+      `UPDATE items SET due_at = due_at + ((($1::date + 1) - due_at::date) * interval '1 day')
+       WHERE NOT done AND kind <> 'meeting' AND due_at IS NOT NULL AND due_at::date <= $1::date`,
+      [date],
+    );
+    rolled = r.rowCount ?? 0;
+  }
+  res.json({ ...rows[0], rolled_over: rolled });
 });
 
 review.get("/reviews", async (_req, res) => {

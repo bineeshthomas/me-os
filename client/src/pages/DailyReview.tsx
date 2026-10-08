@@ -38,7 +38,7 @@ export default function DailyReview() {
   const [f, setF] = useState<Fields | null>(null)
   const [tomorrowMeetings, setTomorrowMeetings] = useState<CalEvent[]>([])
   const [error, setError] = useState('')
-  const [decided, setDecided] = useState<Record<number, string>>({})
+  const [rolledOver, setRolledOver] = useState<number | null>(null)
 
   // Refetch what other cards depend on, without touching what's being typed
   const refresh = useCallback(async () => {
@@ -50,7 +50,7 @@ export default function DailyReview() {
 
   useEffect(() => {
     let cancelled = false
-    setF(null); setDecided({})
+    setF(null); setRolledOver(null)
     ;(async () => {
       try {
         const [d, w, s] = await Promise.all([api.reviewDay(date), api.weekSummary(date), api.settings()])
@@ -69,7 +69,11 @@ export default function DailyReview() {
   const completed = !!day.review?.completed_at
   const set = (patch: Partial<Fields>) => setF({ ...f, ...patch })
   const save = (patch: Partial<ReviewRow> & { complete?: boolean }) =>
-    api.saveReview(date, patch).then(refresh).catch((e) => setError(e.message))
+    api.saveReview(date, patch).then((r) => {
+      if (patch.complete === true) setRolledOver(r.rolled_over)
+      if (patch.complete === false) setRolledOver(null)
+      return refresh()
+    }).catch((e) => setError(e.message))
 
   const textField = (key: 'wins' | 'went_well' | 'blocker' | 'learned' | 'brain_dump', placeholder: string, rows = 2) => (
     <textarea
@@ -107,7 +111,7 @@ export default function DailyReview() {
         {textField('wins', day.wins.length ? 'Anything else you’re proud of?' : 'What did you get done or feel good about today?')}
       </section>
 
-      <OpenItems day={day} decided={decided} setDecided={setDecided} refresh={refresh} setError={setError} />
+      <OpenItems day={day} />
 
       <Goals day={day} date={date} refresh={refresh} setError={setError} />
 
@@ -173,7 +177,8 @@ export default function DailyReview() {
 
         {completed ? (
           <div className="done-banner">
-            ✨ Review complete. {day.review_streak > 1 ? `${day.review_streak} nights in a row!` : 'Nice start.'} Sleep well 🌙
+            ✨ Review complete. {day.review_streak > 1 ? `${day.review_streak} nights in a row!` : 'Nice start.'}
+            {rolledOver ? ` ${rolledOver} unfinished item${rolledOver > 1 ? 's' : ''} moved to tomorrow.` : ''} Sleep well 🌙
             <button className="ghost" onClick={() => save({ complete: false })}>Reopen</button>
           </div>
         ) : (
@@ -232,38 +237,16 @@ function CheckIns({ day, date, refresh, setError }: { day: ReviewDay; date: stri
   )
 }
 
-function OpenItems({ day, decided, setDecided, refresh, setError }: {
-  day: ReviewDay; decided: Record<number, string>; setDecided: (d: Record<number, string>) => void; refresh: () => void; setError: (m: string) => void
-}) {
+function OpenItems({ day }: { day: ReviewDay }) {
   if (day.open_items.length === 0) return null
-  const act = async (id: number, what: 'keep' | 'tomorrow' | 'drop', dueAt: string | null) => {
-    try {
-      if (what === 'drop') await api.deleteItem(id)
-      if (what === 'tomorrow') {
-        const t = new Date()
-        t.setDate(t.getDate() + 1)
-        if (dueAt) { const d = new Date(dueAt); t.setHours(d.getHours(), d.getMinutes(), 0, 0) } else t.setHours(9, 0, 0, 0)
-        await api.setItemDue(id, t.toISOString())
-      }
-      setDecided({ ...decided, [id]: what === 'keep' ? 'Kept' : what === 'tomorrow' ? 'Moved to tomorrow' : 'Dropped' })
-      if (what === 'drop') refresh()
-    } catch (e) { setError((e as Error).message) }
-  }
   return (
     <section className="card">
       <h2>📋 Not finished</h2>
-      <p className="muted">For each one: keep it, move it to tomorrow, or let it go.</p>
+      <p className="muted">These carry over to tomorrow automatically when you finish the review.</p>
       <ul className="steps">
-        {day.open_items.filter((i) => decided[i.id] !== 'Dropped').map((i) => (
+        {day.open_items.map((i) => (
           <li key={i.id}>
-            <span>{KIND_ICON[i.kind]} {i.title}</span>
-            {decided[i.id] ? <small className="chip">{decided[i.id]}</small> : (
-              <span className="actions">
-                <button className="ghost" onClick={() => act(i.id, 'keep', i.due_at)}>Keep</button>
-                <button className="ghost" onClick={() => act(i.id, 'tomorrow', i.due_at)}>→ Tomorrow</button>
-                <button className="ghost" onClick={() => act(i.id, 'drop', i.due_at)}>Drop</button>
-              </span>
-            )}
+            <span>{KIND_ICON[i.kind]} {i.title}{i.due_at && <small> · due {new Date(i.due_at).toLocaleDateString([], { day: 'numeric', month: 'short' })}</small>}</span>
           </li>
         ))}
       </ul>

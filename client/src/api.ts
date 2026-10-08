@@ -74,9 +74,9 @@ export const api = {
   createLink: (name: string, url: string) => req<QuickLink>('POST', '/links', { name, url }),
   updateLink: (id: number, name: string, url: string) => req<QuickLink>('PATCH', `/links/${id}`, { name, url }),
   deleteLink: (id: number) => req<void>('DELETE', `/links/${id}`),
-  setItemDue: (id: number, due_at: string) => req<Item>('PATCH', `/items/${id}`, { due_at }),
   reviewDay: (date: string) => req<ReviewDay>('GET', `/review/${date}`),
-  saveReview: (date: string, patch: Partial<ReviewRow> & { complete?: boolean }) => req<ReviewRow>('PUT', `/review/${date}`, patch),
+  saveReview: (date: string, patch: Partial<ReviewRow> & { complete?: boolean }) =>
+    req<ReviewRow & { rolled_over: number }>('PUT', `/review/${date}`, patch),
   weekSummary: (date: string) => req<WeekSummary>('GET', `/review-summary/${date}`),
   focus: () => req<Focus>('GET', '/focus'),
   setHabit: (date: string, id: number, done: boolean) => req<void>('PUT', `/review/${date}/habits/${id}`, { done }),
