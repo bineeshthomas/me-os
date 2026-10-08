@@ -34,22 +34,6 @@ export default function Dashboard() {
         </section>
       )}
 
-      {focus && focus.goals.length > 0 && (
-        <section className="card">
-          <h2>🌱 Goals <a href="#review" className="more">Log a step</a></h2>
-          {focus.goals.map((g) => {
-            const pct = Math.min(100, Math.round((g.total / g.target_points) * 100))
-            return (
-              <div key={g.id} className="row">
-                <span>{g.title}</span>
-                <div className="bar"><i style={{ width: `${pct}%` }} /></div>
-                <small>{pct}%</small>
-              </div>
-            )
-          })}
-        </section>
-      )}
-
       <section className="card">
         <h2>Active projects</h2>
         {data.projects.length === 0 && <p className="empty">No projects yet.</p>}

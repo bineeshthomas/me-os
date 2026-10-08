@@ -99,15 +99,10 @@ review.get("/reviews", async (_req, res) => {
   res.json(rows);
 });
 
-// What I planned yesterday for today, plus goal progress (dashboard)
+// What I planned yesterday for today (dashboard)
 review.get("/focus", async (_req, res) => {
-  const [p, g] = await Promise.all([
-    pool.query("SELECT priorities FROM daily_reviews WHERE date = CURRENT_DATE - 1"),
-    pool.query(`SELECT g.id, g.title, g.target_points,
-                       COALESCE((SELECT SUM(points) FROM goal_entries e WHERE e.goal_id = g.id), 0)::int AS total
-                FROM goals g WHERE g.achieved_at IS NULL ORDER BY g.created_at LIMIT 5`),
-  ]);
-  res.json({ priorities: p.rows[0]?.priorities ?? [], goals: g.rows });
+  const { rows } = await pool.query("SELECT priorities FROM daily_reviews WHERE date = CURRENT_DATE - 1");
+  res.json({ priorities: rows[0]?.priorities ?? [] });
 });
 
 // --- Habits

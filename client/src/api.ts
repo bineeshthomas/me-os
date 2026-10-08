@@ -27,7 +27,7 @@ export interface WeekSummary {
   habits: { id: number; name: string; icon: string; count: number }[]
   goals: { id: number; title: string; points: number }[]
 }
-export interface Focus { priorities: string[]; goals: { id: number; title: string; target_points: number; total: number }[] }
+export interface Focus { priorities: string[] }
 export interface Dashboard {
   counts: { projects: number; notes: number; open_steps: number; done_steps: number }
   projects: Project[]
