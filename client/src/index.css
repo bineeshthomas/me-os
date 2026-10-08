@@ -113,3 +113,36 @@ header h1 { white-space: nowrap; }
   .searchbtn { order: 3; flex: 1 1 100%; max-width: none; }
   header > div:first-child { flex: 1 1 auto; }
 }
+
+/* Compact density */
+body { font-size: 14px; }
+header { padding: 10px 20px; }
+header h1 { font-size: 17px; }
+main { padding: 16px 20px; gap: 12px; }
+.card { padding: 14px 16px; border-radius: 14px; }
+.card h2 { font-size: 15px; margin-bottom: 2px; }
+.card h3 { font-size: 14px; margin-bottom: 2px; }
+.card p { font-size: 13px; margin: 2px 0; }
+.head { gap: 12px; }
+.primary { padding: 6px 14px; font-size: 13px; }
+.ghost { font-size: 12px; padding: 2px 6px; }
+input, textarea { padding: 7px 10px; font-size: 13px; border-radius: 8px; }
+.form { gap: 8px; }
+.steps { margin: 8px 0; }
+.steps li { padding: 3px 0; gap: 8px; }
+.circle { width: 18px; height: 18px; font-size: 10px; border-width: 1.5px; }
+.stats { gap: 10px; }
+.stat b { font-size: 22px; }
+.stat span { font-size: 12px; }
+.row { padding: 6px 0; }
+.rail { gap: 10px; padding: 16px 14px; }
+.widget { padding: 10px 14px; }
+nav a { padding: 8px 14px; font-size: 13px; }
+.searchbtn { padding: 7px 14px; font-size: 13px; }
+.pill { padding: 5px 12px; font-size: 12px; }
+@media (max-width: 700px) {
+  main { padding: 12px; }
+  header { padding: 10px 12px; }
+  .rail { padding: 12px; }
+}
+p.card { margin: 0; }
