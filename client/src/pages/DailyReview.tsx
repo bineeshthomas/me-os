@@ -11,6 +11,9 @@ const prettyDate = (date: string) => {
   return new Date(y, m - 1, d).toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' })
 }
 
+const relative = (date: string, today: string) =>
+  date === today ? 'Today · ' : date === addDays(today, -1) ? 'Yesterday · ' : ''
+
 const KIND_ICON: Record<string, string> = { task: '✅', call: '📞', email: '✉️', message: '💬', reminder: '🔔' }
 const MOODS = ['😞', '🙁', '😐', '🙂', '😄']
 const STEPS = [1, 2, 5, 10]
@@ -81,11 +84,12 @@ export default function DailyReview() {
       {error && <p className="error">{error}</p>}
 
       <section className="card rv-head">
-        <div className="actions">
-          <button className="ghost" aria-label="Previous day" onClick={() => setDate(addDays(date, -1))}>‹</button>
+        <div className="daynav">
+          <button className="navbtn" onClick={() => setDate(addDays(date, -1))}>‹ Previous day</button>
+          <button className="navbtn" disabled={date >= today} onClick={() => setDate(addDays(date, 1))}>Next day ›</button>
+          {date !== today && <button className="navbtn" onClick={() => setDate(today)}>Today</button>}
           <input type="date" value={date} max={today} onChange={(e) => e.target.value && setDate(e.target.value)} aria-label="Review date" />
-          <button className="ghost" aria-label="Next day" disabled={date >= today} onClick={() => setDate(addDays(date, 1))}>›</button>
-          <strong>{prettyDate(date)}</strong>
+          <strong>{relative(date, today)}{prettyDate(date)}</strong>
         </div>
         <div className="badges">
           <span className="badge">🔥 {day.review_streak} night streak</span>

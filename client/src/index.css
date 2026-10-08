@@ -300,3 +300,10 @@ p.card { margin: 0; }
   .steps li:has(> .actions) > span:first-child { flex: 1 1 100%; }
   .steps li > .actions { margin-left: 28px; }
 }
+
+/* Daily review: previous / next day */
+.daynav { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.navbtn { height: 32px; padding: 0 14px; border-radius: 999px; background: #eef7f1; color: var(--mint-dark); font-weight: 600; font-size: 13px; white-space: nowrap; }
+.navbtn:hover:not(:disabled) { background: var(--mint); }
+.navbtn:disabled { opacity: .4; cursor: not-allowed; }
+.daynav input[type=date] { width: auto; }
