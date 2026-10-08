@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import { createContext, useCallback, useContext, useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { api, type CalEvent, type ReviewDay, type ReviewRow, type WeekSummary } from '../api'
 
 const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
@@ -13,6 +13,29 @@ const prettyDate = (date: string) => {
 
 const relative = (date: string, today: string) =>
   date === today ? 'Today · ' : date === addDays(today, -1) ? 'Yesterday · ' : ''
+
+// Collapsible sections: open/closed state is remembered between visits
+const SECTION_IDS = ['checkins', 'wins', 'notfinished', 'goals', 'reflect', 'tomorrow', 'close', 'week']
+const CollapseCtx = createContext<{ closed: Record<string, boolean>; toggle: (id: string) => void }>({ closed: {}, toggle: () => {} })
+
+function Section({ id, title, hint, extra, children }: { id: string; title: string; hint?: string; extra?: ReactNode; children: ReactNode }) {
+  const { closed, toggle } = useContext(CollapseCtx)
+  const isClosed = !!closed[id]
+  return (
+    <section className={isClosed ? 'card rv-sec closed' : 'card rv-sec'}>
+      <div className="sec-head">
+        <h2>
+          <button className="sec-toggle" aria-expanded={!isClosed} onClick={() => toggle(id)}>
+            <span className="chev" aria-hidden>{isClosed ? '▸' : '▾'}</span>{title}
+          </button>
+        </h2>
+        {isClosed && hint && <small className="muted sec-hint">{hint}</small>}
+        {!isClosed && extra && <span className="sec-extra">{extra}</span>}
+      </div>
+      {!isClosed && <div className="sec-body">{children}</div>}
+    </section>
+  )
+}
 
 const KIND_ICON: Record<string, string> = { task: '✅', call: '📞', email: '✉️', message: '💬', reminder: '🔔' }
 const MOODS = ['😞', '🙁', '😐', '🙂', '😄']
@@ -39,6 +62,15 @@ export default function DailyReview() {
   const [tomorrowMeetings, setTomorrowMeetings] = useState<CalEvent[]>([])
   const [error, setError] = useState('')
   const [rolledOver, setRolledOver] = useState<number | null>(null)
+  const [closed, setClosed] = useState<Record<string, boolean>>(() => {
+    try { return JSON.parse(localStorage.getItem('rv-closed') ?? '{}') } catch { return {} }
+  })
+  const updateClosed = (next: Record<string, boolean>) => {
+    setClosed(next)
+    try { localStorage.setItem('rv-closed', JSON.stringify(next)) } catch { /* ignore */ }
+  }
+  const toggle = (id: string) => updateClosed({ ...closed, [id]: !closed[id] })
+  const setAll = (value: boolean) => updateClosed(Object.fromEntries(SECTION_IDS.map((id) => [id, value])))
 
   // Refetch what other cards depend on, without touching what's being typed
   const refresh = useCallback(async () => {
@@ -84,7 +116,7 @@ export default function DailyReview() {
   )
 
   return (
-    <>
+    <CollapseCtx.Provider value={{ closed, toggle }}>
       {error && <p className="error">{error}</p>}
 
       <section className="card rv-head">
@@ -98,32 +130,31 @@ export default function DailyReview() {
         <div className="badges">
           <span className="badge">🔥 {day.review_streak} night streak</span>
           <span className="badge">⭐ {day.points_today} pts today</span>
+          <button className="navbtn" onClick={() => setAll(true)}>Collapse all</button>
+          <button className="navbtn" onClick={() => setAll(false)}>Expand all</button>
         </div>
       </section>
 
       <CheckIns day={day} date={date} refresh={refresh} setError={setError} />
 
-      <section className="card">
-        <h2>🏆 Today's wins</h2>
+      <Section id="wins" title="🏆 Today's wins" hint={`${day.wins.length} done`}>
         {day.wins.length > 0 && (
           <div className="chips">{day.wins.map((w, i) => <span key={i} className="chip">✓ {w}</span>)}</div>
         )}
         {textField('wins', day.wins.length ? 'Anything else you’re proud of?' : 'What did you get done or feel good about today?')}
-      </section>
+      </Section>
 
       <OpenItems day={day} />
 
       <Goals day={day} date={date} refresh={refresh} setError={setError} />
 
-      <section className="card">
-        <h2>🪞 Reflect</h2>
+      <Section id="reflect" title="🪞 Reflect">
         <label>What went well?{textField('went_well', 'One or two lines…')}</label>
         <label>What got in the way?{textField('blocker', 'The blocker, so you can fix it tomorrow…')}</label>
         <label>One thing I learned{textField('learned', 'A lesson or something to do differently…')}</label>
-      </section>
+      </Section>
 
-      <section className="card">
-        <h2>🎯 Tomorrow</h2>
+      <Section id="tomorrow" title="🎯 Tomorrow" hint={`${f.priorities.filter(Boolean).length} of 3 priorities set`}>
         <p className="muted">Pick your top 3. They show on the dashboard tomorrow. Make #1 your first task.</p>
         {f.priorities.map((p, i) => (
           <input
@@ -139,10 +170,9 @@ export default function DailyReview() {
             <li key={e.id}><span><span className="outlook-tag">Outlook</span>{e.title} <small>· {new Date(e.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</small></span></li>
           ))}
         </ul>
-      </section>
+      </Section>
 
-      <section className="card">
-        <h2>🌙 Close the day</h2>
+      <Section id="close" title="🌙 Close the day" hint={completed ? 'Review complete ✓' : 'Not finished yet'}>
         <label>Brain dump <small className="muted">(get it out of your head so it doesn't keep you awake)</small>{textField('brain_dump', 'Anything on your mind…', 3)}</label>
         <div className="rv-row">
           <div>
@@ -184,10 +214,10 @@ export default function DailyReview() {
         ) : (
           <button className="primary finish" onClick={() => save({ complete: true })}>Finish review 🌙</button>
         )}
-      </section>
+      </Section>
 
       {week && <WeekCard week={week} />}
-    </>
+    </CollapseCtx.Provider>
   )
 }
 
@@ -205,11 +235,8 @@ function CheckIns({ day, date, refresh, setError }: { day: ReviewDay; date: stri
   }
 
   return (
-    <section className="card">
-      <div className="head">
-        <h2>💪 Check-ins</h2>
-        <button className="ghost" onClick={() => setAdding(!adding)}>{adding ? 'Cancel' : '+ Add habit'}</button>
-      </div>
+    <Section id="checkins" title="💪 Check-ins" hint={`${day.habits.filter((h) => h.done).length}/${day.habits.length} done`}
+      extra={<button className="ghost" onClick={() => setAdding(!adding)}>{adding ? 'Cancel' : '+ Add habit'}</button>}>
       <div className="habits">
         {day.habits.map((h) => (
           <div key={h.id} className="habit-wrap">
@@ -233,15 +260,14 @@ function CheckIns({ day, date, refresh, setError }: { day: ReviewDay; date: stri
           <button className="primary">Add</button>
         </form>
       )}
-    </section>
+    </Section>
   )
 }
 
 function OpenItems({ day }: { day: ReviewDay }) {
   if (day.open_items.length === 0) return null
   return (
-    <section className="card">
-      <h2>📋 Not finished</h2>
+    <Section id="notfinished" title="📋 Not finished" hint={`${day.open_items.length} item${day.open_items.length === 1 ? '' : 's'}`}>
       <p className="muted">These carry over to tomorrow automatically when you finish the review.</p>
       <ul className="steps">
         {day.open_items.map((i) => (
@@ -250,7 +276,7 @@ function OpenItems({ day }: { day: ReviewDay }) {
           </li>
         ))}
       </ul>
-    </section>
+    </Section>
   )
 }
 
@@ -277,11 +303,8 @@ function Goals({ day, date, refresh, setError }: { day: ReviewDay; date: string;
   }
 
   return (
-    <section className="card">
-      <div className="head">
-        <h2>🌱 Goals: a tiny step for a big goal</h2>
-        <button className="ghost" onClick={() => setAdding(!adding)}>{adding ? 'Cancel' : '+ New goal'}</button>
-      </div>
+    <Section id="goals" title="🌱 Goals: a tiny step for a big goal" hint={`${day.goals.length} goal${day.goals.length === 1 ? '' : 's'}`}
+      extra={<button className="ghost" onClick={() => setAdding(!adding)}>{adding ? 'Cancel' : '+ New goal'}</button>}>
       {cheer && <p className="ok" role="status">{cheer}</p>}
       {adding && (
         <form className="form" onSubmit={create}>
@@ -325,15 +348,14 @@ function Goals({ day, date, refresh, setError }: { day: ReviewDay; date: string;
           </div>
         )
       })}
-    </section>
+    </Section>
   )
 }
 
 function WeekCard({ week }: { week: WeekSummary }) {
   const dow = (date: string) => { const [y, m, d] = date.split('-').map(Number); return new Date(y, m - 1, d).toLocaleDateString([], { weekday: 'short' }) }
   return (
-    <section className="card">
-      <h2>📈 This week</h2>
+    <Section id="week" title="📈 This week" hint={`${week.reviews_done}/7 reviews · ${week.points_total} pts`}>
       <div className="week">
         {week.days.map((d) => (
           <div key={d.date} className={d.reviewed ? 'wday ok' : 'wday'} title={`${d.date}: ${d.points} pts`}>
@@ -355,6 +377,6 @@ function WeekCard({ week }: { week: WeekSummary }) {
       {week.goals.length > 0 && (
         <div className="chips">{week.goals.map((g) => <span key={g.id} className="chip">🌱 {g.title}: +{g.points} pts</span>)}</div>
       )}
-    </section>
+    </Section>
   )
 }

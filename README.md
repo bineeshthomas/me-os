@@ -22,7 +22,7 @@ Copy `server/.env.example` to `server/.env` if it doesn't exist.
 - **Dashboard** - counts, active project progress, recent notes
 - **Projects** - compact cards, most recently created/updated first; click one to edit its title, description and steps
 - **Notes** - quick notes (create, edit, delete)
-- **Daily Review** - nightly page (top 3 for tomorrow also show on the dashboard): one-tap check-ins with streaks (worked out, read...), wins, unfinished items (shown read-only; dated ones roll over to the next day when you finish the review), long-term goals advanced by tiny point steps, reflection, top 3 for tomorrow, brain dump, ratings, and a 7-day summary
+- **Daily Review** - nightly page (every section collapses; the choice is remembered) (top 3 for tomorrow also show on the dashboard): one-tap check-ins with streaks (worked out, read...), wins, unfinished items (shown read-only; dated ones roll over to the next day when you finish the review), long-term goals advanced by tiny point steps, reflection, top 3 for tomorrow, brain dump, ratings, and a 7-day summary
 - **Links** - save quick-launch links with a name; they open in a new tab (http/https only)
 - **Widget rail** - Focus Tasks, Calls, Emails, Messages (pick WhatsApp or Teams), Meetings, Reminders (add, tick off, delete; meetings and reminders take a date and time)
 - **Completed items** stay on their card, crossed out, until the end of the day they were ticked, then drop off (they stay in the database)
