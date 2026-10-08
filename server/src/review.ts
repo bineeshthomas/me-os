@@ -132,7 +132,7 @@ review.put("/review/:date/habits/:id", async (req, res) => {
 review.post("/habits", async (req, res) => {
   const name = String(req.body?.name ?? "").trim();
   if (!name) return res.status(400).json({ error: "name is required" });
-  const icon = String(req.body?.icon ?? "").trim() || "✅";
+  const icon = String(req.body?.icon ?? "").trim() || "⭐";
   const points = Math.max(1, Math.round(Number(req.body?.points) || 10));
   const { rows } = await pool.query("INSERT INTO habits (name, icon, points) VALUES ($1, $2, $3) RETURNING *", [name, icon, points]);
   res.status(201).json(rows[0]);

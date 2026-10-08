@@ -240,11 +240,10 @@ function CheckIns({ day, date, refresh, setError }: { day: ReviewDay; date: stri
       <div className="habits">
         {day.habits.map((h) => (
           <div key={h.id} className="habit-wrap">
-            <button className={h.done ? 'habit done' : 'habit'} aria-pressed={h.done} onClick={() => toggle(h.id, !h.done)}>
+            <button className={h.done ? 'habit done' : 'habit'} aria-pressed={h.done} title={`${h.name} · +${h.points} pts${h.streak ? ` · ${h.streak}-day streak` : ''}`} onClick={() => toggle(h.id, !h.done)}>
               <span className="hicon">{h.done ? '✅' : h.icon}</span>
               <b>{h.name}</b>
-              <small>{h.done ? 'Done!' : `+${h.points} pts`}</small>
-              {h.streak > 0 && <em>🔥 {h.streak} day{h.streak > 1 ? 's' : ''}</em>}
+              <small>{h.done ? 'Done!' : `+${h.points}`}{h.streak > 0 && <em title={`${h.streak}-day streak`}> 🔥{h.streak}</em>}</small>
             </button>
             <button className="habit-x ghost" aria-label={`Delete ${h.name}`}
               onClick={() => confirm(`Delete "${h.name}" and its history?`) && api.deleteHabit(h.id).then(refresh)}>✕</button>
@@ -254,7 +253,7 @@ function CheckIns({ day, date, refresh, setError }: { day: ReviewDay; date: stri
       {day.habits.length === 0 && !adding && <p className="empty">No check-ins yet. Add one, like "Meditated".</p>}
       {adding && (
         <form className="linkform" onSubmit={add}>
-          <input className="emoji" placeholder="🙂" maxLength={4} value={icon} onChange={(e) => setIcon(e.target.value)} aria-label="Emoji" />
+          <input className="emoji" placeholder="⭐" maxLength={4} value={icon} onChange={(e) => setIcon(e.target.value)} aria-label="Emoji" />
           <input required placeholder="Name (e.g. Meditated)" value={name} onChange={(e) => setName(e.target.value)} />
           <input type="number" min={1} className="pts" value={points} onChange={(e) => setPoints(e.target.value)} aria-label="Points" />
           <button className="primary">Add</button>

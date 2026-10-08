@@ -332,3 +332,13 @@ p.card { margin: 0; }
 .bday.today { outline: 2px solid var(--accent); outline-offset: -1px; }
 .bday.pending { border-style: dashed; }
 @media (max-width: 700px) { .band-days { justify-content: space-between; flex-basis: 100%; } .bday { max-width: none; } }
+
+/* Compact check-in tiles: 8+ per row */
+.habits { grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 6px; }
+.habit { padding: 8px 4px 6px; border-radius: 12px; border-width: 1.5px; gap: 1px; }
+.hicon { font-size: 22px; }
+.habit b { font-size: 11px; line-height: 1.2; text-align: center; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word; }
+.habit small { font-size: 10px; white-space: nowrap; }
+.habit em { font-size: 10px; }
+.habit-x { top: 1px; right: 1px; font-size: 10px; padding: 0 3px; }
+@media (max-width: 700px) { .habits { grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); } }
