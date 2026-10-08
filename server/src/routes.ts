@@ -114,3 +114,61 @@ api.get("/dashboard", async (_req, res) => {
   ]);
   res.json({ counts: counts.rows[0], projects: projects.rows, notes: notes.rows });
 });
+
+// Widget items: tasks, calls, emails, meetings, reminders
+const KINDS = ["task", "call", "email", "meeting", "reminder"];
+
+api.get("/items", async (req, res) => {
+  const kind = typeof req.query.kind === "string" ? req.query.kind : null;
+  const { rows } = await pool.query(
+    "SELECT * FROM items WHERE ($1::text IS NULL OR kind = $1) ORDER BY done, due_at NULLS LAST, id",
+    [kind],
+  );
+  res.json(rows);
+});
+
+api.post("/items", async (req, res) => {
+  const { kind, title, due_at } = req.body ?? {};
+  if (!KINDS.includes(kind)) return res.status(400).json({ error: "invalid kind" });
+  if (!title) return res.status(400).json({ error: "title is required" });
+  const { rows } = await pool.query("INSERT INTO items (kind, title, due_at) VALUES ($1, $2, $3) RETURNING *", [
+    kind,
+    title,
+    due_at || null,
+  ]);
+  res.status(201).json(rows[0]);
+});
+
+api.patch("/items/:id", async (req, res) => {
+  const { title, due_at, done } = req.body ?? {};
+  const { rows } = await pool.query(
+    "UPDATE items SET title = COALESCE($2, title), due_at = COALESCE($3, due_at), done = COALESCE($4, done) WHERE id = $1 RETURNING *",
+    [req.params.id, title ?? null, due_at ?? null, done ?? null],
+  );
+  if (!rows[0]) return res.status(404).json({ error: "not found" });
+  res.json(rows[0]);
+});
+
+api.delete("/items/:id", async (req, res) => {
+  const { rowCount } = await pool.query("DELETE FROM items WHERE id = $1", [req.params.id]);
+  res.status(rowCount ? 204 : 404).end();
+});
+
+// Search across projects, steps, notes and items
+api.get("/search", async (req, res) => {
+  const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
+  if (!q) return res.json([]);
+  const like = `%${q.replace(/[\\%_]/g, "\\$&")}%`;
+  const { rows } = await pool.query(
+    `SELECT 'project' AS type, id, title, description AS snippet FROM projects WHERE title ILIKE $1 OR description ILIKE $1
+     UNION ALL
+     SELECT 'step', project_id, title, NULL FROM project_steps WHERE title ILIKE $1
+     UNION ALL
+     SELECT 'note', id, title, LEFT(body, 120) FROM notes WHERE title ILIKE $1 OR body ILIKE $1
+     UNION ALL
+     SELECT kind, id, title, NULL FROM items WHERE title ILIKE $1
+     LIMIT 30`,
+    [like],
+  );
+  res.json(rows);
+});

@@ -22,9 +22,14 @@ Copy `server/.env.example` to `server/.env` if it doesn't exist.
 - **Dashboard** - counts, active project progress, recent notes
 - **Projects** - roadmaps made of step-by-step phases you tick off
 - **Notes** - quick notes (create, edit, delete)
+- **Widget rail** - Focus Tasks, Calls, Emails, Meetings, Reminders (add, tick off, delete; calls/meetings/reminders take a date and time)
+- **Search** - Ctrl/Cmd+K searches projects, steps, notes and widget items
+- **Header** - weather (Open-Meteo, click to change city; default New Delhi) plus date and time
 
 ## API
 - `GET /api/dashboard`
 - `GET|POST /api/projects`, `PATCH|DELETE /api/projects/:id`
 - `POST /api/projects/:id/steps`, `PATCH|DELETE /api/steps/:id`
+- `GET|POST /api/items`, `PATCH|DELETE /api/items/:id`
+- `GET /api/search?q=`
 - `GET|POST /api/notes`, `PATCH|DELETE /api/notes/:id`

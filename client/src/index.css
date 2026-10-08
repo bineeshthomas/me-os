@@ -13,11 +13,11 @@ nav { width: 216px; background: var(--mint); padding: 20px 12px; display: flex; 
 nav a { display: flex; gap: 12px; padding: 10px 14px; border-radius: 999px; color: #fff; text-decoration: none; font-size: 14px; }
 nav a.active { background: #fff; color: var(--mint-dark); font-weight: 600; }
 .main { flex: 1; min-width: 0; }
-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 24px; border-bottom: 1px solid var(--line); }
+header { display: flex; justify-content: space-between; gap: 16px; align-items: center; padding: 14px 24px; border-bottom: 1px solid var(--line); }
 header h1 { margin: 0; font-size: 20px; }
 header small, .muted, .empty, small { color: var(--muted); }
 .pill { background: #fff; border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; font-weight: 600; font-size: 13px; }
-main { padding: 24px; max-width: 860px; display: flex; flex-direction: column; gap: 16px; }
+main { padding: 24px; flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
 .card { background: var(--card); border-radius: 18px; padding: 20px; border: 1px solid var(--line); box-shadow: 0 1px 4px rgba(0,0,0,.04); }
 .card h2, .card h3 { margin: 0 0 6px; }
 .card p { margin: 4px 0; font-size: 14px; }
@@ -45,3 +45,19 @@ input, textarea { font: inherit; padding: 10px 12px; border: 1px solid var(--lin
 .actions { display: flex; gap: 8px; }
 .note-body { white-space: pre-wrap; }
 .error { color: var(--danger); }
+
+.body { display: flex; align-items: flex-start; }
+.rail { width: 320px; border-left: 1px solid var(--line); padding: 24px 16px; display: flex; flex-direction: column; gap: 14px; flex-shrink: 0; }
+.widget { padding: 14px 16px; }
+.widget h4 { margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.widget .steps { margin: 6px 0 0; }
+.widget .form { margin: 8px 0; }
+.searchbtn { flex: 1; max-width: 420px; text-align: left; background: #f0ece3; color: var(--muted); padding: 10px 16px; border-radius: 999px; }
+kbd { float: right; font-size: 11px; background: #fff; padding: 1px 6px; border-radius: 6px; }
+.pill { color: var(--ink); }
+button.pill { cursor: pointer; }
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,.3); display: flex; justify-content: center; padding-top: 12vh; z-index: 10; }
+.dialog { width: 560px; max-height: 70vh; overflow: auto; align-self: flex-start; display: flex; flex-direction: column; gap: 8px; }
+.hit { padding: 8px 10px; border-radius: 10px; color: var(--ink); text-decoration: none; font-size: 14px; }
+.hit:hover { background: var(--bg); }
+.hit small:first-child { text-transform: uppercase; font-size: 10px; background: var(--mint); color: var(--mint-dark); padding: 1px 6px; border-radius: 6px; }

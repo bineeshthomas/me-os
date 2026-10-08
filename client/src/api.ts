@@ -1,6 +1,9 @@
 export interface Step { id: number; title: string; done: boolean; position: number }
 export interface Project { id: number; title: string; description: string | null; created_at: string; steps: Step[] }
 export interface Note { id: number; title: string; body: string; created_at: string; updated_at: string }
+export type Kind = 'task' | 'call' | 'email' | 'meeting' | 'reminder'
+export interface Item { id: number; kind: Kind; title: string; due_at: string | null; done: boolean }
+export interface SearchHit { type: 'project' | 'step' | 'note' | Kind; id: number; title: string; snippet: string | null }
 export interface Dashboard {
   counts: { projects: number; notes: number; open_steps: number; done_steps: number }
   projects: Project[]
@@ -26,6 +29,11 @@ export const api = {
   addStep: (projectId: number, title: string) => req<Step>('POST', `/projects/${projectId}/steps`, { title }),
   setStepDone: (id: number, done: boolean) => req<Step>('PATCH', `/steps/${id}`, { done }),
   deleteStep: (id: number) => req<void>('DELETE', `/steps/${id}`),
+  items: () => req<Item[]>('GET', '/items'),
+  createItem: (kind: Kind, title: string, due_at: string | null) => req<Item>('POST', '/items', { kind, title, due_at }),
+  setItemDone: (id: number, done: boolean) => req<Item>('PATCH', `/items/${id}`, { done }),
+  deleteItem: (id: number) => req<void>('DELETE', `/items/${id}`),
+  search: (q: string) => req<SearchHit[]>('GET', `/search?q=${encodeURIComponent(q)}`),
   notes: () => req<Note[]>('GET', '/notes'),
   createNote: (title: string, body: string) => req<Note>('POST', '/notes', { title, body }),
   updateNote: (id: number, title: string, body: string) => req<Note>('PATCH', `/notes/${id}`, { title, body }),

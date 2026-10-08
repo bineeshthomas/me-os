@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import Dashboard from './pages/Dashboard'
 import Projects from './pages/Projects'
 import Notes from './pages/Notes'
+import { Search, Weather, WidgetRail } from './components'
 
 const PAGES = {
   home: { label: 'Home', icon: '🏠', title: 'Dashboard ⚓', subtitle: 'Personal Control Surface', view: Dashboard },
@@ -45,9 +46,15 @@ export default function App() {
       <div className="main">
         <header>
           <div><h1>{title}</h1><small>{subtitle}</small></div>
-          <span className="pill">{time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+          <Search />
+          <div className="actions">
+            <Weather />
+            <span className="pill">
+              {time.toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' })} · {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </span>
+          </div>
         </header>
-        <main><View /></main>
+        <div className="body"><main><View /></main><WidgetRail /></div>
       </div>
     </div>
   )

@@ -23,3 +23,13 @@ CREATE TABLE IF NOT EXISTS notes (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+CREATE TABLE IF NOT EXISTS items (
+  id         SERIAL PRIMARY KEY,
+  kind       TEXT NOT NULL CHECK (kind IN ('task', 'call', 'email', 'meeting', 'reminder')),
+  title      TEXT NOT NULL,
+  due_at     TIMESTAMPTZ,
+  done       BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS items_kind_idx ON items (kind, done);
