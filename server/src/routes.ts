@@ -186,7 +186,21 @@ import { clearCalendarCache, getCalendarUrl, getEvents, normalizeCalendarUrl } f
 
 api.get("/settings", async (_req, res) => {
   const url = await getCalendarUrl();
-  res.json({ calendar: url ? { connected: true, host: new URL(url).host } : { connected: false } });
+  const { rows } = await pool.query("SELECT value FROM settings WHERE key = 'stress_level'");
+  res.json({
+    calendar: url ? { connected: true, host: new URL(url).host } : { connected: false },
+    stress: rows[0] ? Number(rows[0].value) : 20,
+  });
+});
+
+api.put("/settings/stress", async (req, res) => {
+  const level = Math.round(Number(req.body?.level));
+  if (!Number.isFinite(level) || level < 0 || level > 100) return res.status(400).json({ error: "level must be 0-100" });
+  await pool.query(
+    "INSERT INTO settings (key, value) VALUES ('stress_level', $1) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value",
+    [String(level)],
+  );
+  res.json({ stress: level });
 });
 
 api.put("/settings/calendar", async (req, res) => {

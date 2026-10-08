@@ -184,3 +184,25 @@ p.card { margin: 0; }
 .linkcard a:hover b { color: var(--accent); }
 .linkcard small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .linkcard .actions { justify-content: flex-end; }
+
+/* Footer with quote and stress meter */
+.main { display: flex; flex-direction: column; min-height: 100vh; }
+.body { flex: 1; }
+.footer { position: sticky; bottom: 0; z-index: 4; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding: 6px 20px; background: #fffefb; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); }
+.quote { font-style: italic; }
+.stress { display: flex; align-items: center; gap: 6px; }
+.stress input[type=range] { width: 160px; padding: 0; accent-color: var(--mint-dark); }
+.stress .ghost { font-size: 14px; padding: 0 2px; }
+.stress .ghost:hover { color: inherit; }
+.stress-n { min-width: 30px; text-align: center; border-radius: 99px; padding: 1px 8px; font-size: 12px; }
+.stress-n.lo { background: #d9f2e4; color: #14724a; }
+.stress-n.mid { background: #fdf3d0; color: #8a6a00; }
+.stress-n.hi { background: #fde3cf; color: #a04a00; }
+.stress-n.max { background: #fbd9d6; color: #a61e14; }
+.stress-label { min-width: 150px; }
+@media (max-width: 700px) {
+  .main { min-height: 0; }
+  .footer { position: static; padding: 8px 12px; }
+  .stress { flex-wrap: wrap; }
+  .stress-label { min-width: 0; }
+}

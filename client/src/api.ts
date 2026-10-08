@@ -42,7 +42,8 @@ export const api = {
   setItemDone: (id: number, done: boolean) => req<Item>('PATCH', `/items/${id}`, { done }),
   deleteItem: (id: number) => req<void>('DELETE', `/items/${id}`),
   search: (q: string) => req<SearchHit[]>('GET', `/search?q=${encodeURIComponent(q)}`),
-  settings: () => req<{ calendar: CalendarStatus }>('GET', '/settings'),
+  settings: () => req<{ calendar: CalendarStatus; stress: number }>('GET', '/settings'),
+  saveStress: (level: number) => req<{ stress: number }>('PUT', '/settings/stress', { level }),
   saveCalendar: (url: string) => req<{ calendar: CalendarStatus }>('PUT', '/settings/calendar', { url }),
   removeCalendar: () => req<void>('DELETE', '/settings/calendar'),
   calendarEvents: (from: Date, to: Date) =>

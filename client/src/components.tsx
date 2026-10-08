@@ -340,3 +340,42 @@ export function Calendar({ onClose }: { onClose: () => void }) {
     </div>
   )
 }
+
+const QUOTES = [
+  'One thing at a time.',
+  'Remember what you are working for.',
+  'Progress, not perfection.',
+  'Start small, keep going.',
+  'Done is better than perfect.',
+  'Breathe. Then begin.',
+]
+
+const stressLabel = (n: number) =>
+  n < 25 ? 'Calm & focused.' : n < 50 ? 'Steady.' : n < 75 ? 'Getting busy. Take a breather.' : 'High stress. Step away for a minute.'
+
+export function Footer({ page }: { page: string }) {
+  const [level, setLevel] = useState(20)
+  const quote = QUOTES[(page.length + new Date().getDate()) % QUOTES.length]
+
+  useEffect(() => { api.settings().then((s) => setLevel(s.stress)).catch(() => {}) }, [])
+
+  const commit = (n: number) => { api.saveStress(n).catch(() => {}) }
+
+  return (
+    <footer className="footer">
+      <span className="quote">💬 “{quote}”</span>
+      <div className="stress" title="How stressed are you right now?">
+        <button type="button" className="ghost" aria-label="Set to 0 (Calm)" onClick={() => { setLevel(0); commit(0) }}>🌿</button>
+        <input
+          type="range" min={0} max={100} value={level} aria-label="Stress level"
+          onChange={(e) => setLevel(Number(e.target.value))}
+          onPointerUp={(e) => commit(Number((e.target as HTMLInputElement).value))}
+          onKeyUp={(e) => commit(Number((e.target as HTMLInputElement).value))}
+        />
+        <button type="button" className="ghost" aria-label="Set to 100 (High stress)" onClick={() => { setLevel(100); commit(100) }}>⚡</button>
+        <b className={`stress-n ${level < 25 ? 'lo' : level < 50 ? 'mid' : level < 75 ? 'hi' : 'max'}`}>{level}</b>
+        <span className="stress-label">{stressLabel(level)}</span>
+      </div>
+    </footer>
+  )
+}

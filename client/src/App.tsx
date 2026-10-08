@@ -4,7 +4,7 @@ import Projects from './pages/Projects'
 import Notes from './pages/Notes'
 import Links from './pages/Links'
 import Settings from './pages/Settings'
-import { Calendar, Search, Weather, WidgetRail } from './components'
+import { Calendar, Footer, Search, Weather, WidgetRail } from './components'
 
 const PAGES = {
   home: { label: 'Home', icon: '🏠', title: 'Dashboard ⚓', subtitle: 'Personal Control Surface', view: Dashboard },
@@ -75,6 +75,7 @@ export default function App() {
         </header>
         {calOpen && <Calendar onClose={() => setCalOpen(false)} />}
         <div className="body"><main><View /></main><WidgetRail /></div>
+        <Footer page={page} />
       </div>
     </div>
   )
