@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { api, type Item, type Kind, type SearchHit } from './api'
+import { api, type CalEvent, type Item, type Kind, type SearchHit } from './api'
 
 const WIDGETS: { kind: Kind; label: string; icon: string; empty: string; timed: boolean }[] = [
   { kind: 'task', label: 'Focus Tasks', icon: '✅', empty: 'Nothing pressing.', timed: false },
@@ -12,7 +12,14 @@ const WIDGETS: { kind: Kind; label: string; icon: string; empty: string; timed: 
 const fmt = (iso: string) =>
   new Date(iso).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 
-function Widget({ cfg, items, reload }: { cfg: (typeof WIDGETS)[number]; items: Item[]; reload: () => void }) {
+const evTime = (e: CalEvent) =>
+  e.allDay ? 'All day' : new Date(e.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+const evWhen = (e: CalEvent) =>
+  e.allDay
+    ? `${new Date(e.start).toLocaleDateString([], { month: 'short', day: 'numeric' })} · All day`
+    : fmt(e.start)
+
+function Widget({ cfg, items, reload, extra = [] }: { cfg: (typeof WIDGETS)[number]; items: Item[]; reload: () => void; extra?: CalEvent[] }) {
   const [adding, setAdding] = useState(false)
   const [title, setTitle] = useState('')
   const [due, setDue] = useState('')
@@ -38,13 +45,18 @@ function Widget({ cfg, items, reload }: { cfg: (typeof WIDGETS)[number]; items: 
           <button className="primary">Add</button>
         </form>
       )}
-      {items.length === 0 && !adding && <p className="empty">{cfg.empty}</p>}
+      {items.length === 0 && extra.length === 0 && !adding && <p className="empty">{cfg.empty}</p>}
       <ul className="steps">
         {items.map((i) => (
           <li key={i.id} className={i.done ? 'done' : ''}>
             <button className="circle" aria-label="Toggle" onClick={() => api.setItemDone(i.id, !i.done).then(reload)}>{i.done ? '✓' : ''}</button>
             <span>{i.title}{i.due_at && <small> · {fmt(i.due_at)}</small>}</span>
             <button className="ghost" aria-label="Delete" onClick={() => api.deleteItem(i.id).then(reload)}>✕</button>
+          </li>
+        ))}
+        {extra.map((e) => (
+          <li key={e.id}>
+            <span><span className="outlook-tag">Outlook</span>{e.title}<small> · {evWhen(e)}</small></span>
           </li>
         ))}
       </ul>
@@ -54,12 +66,20 @@ function Widget({ cfg, items, reload }: { cfg: (typeof WIDGETS)[number]; items: 
 
 export function WidgetRail() {
   const [items, setItems] = useState<Item[]>([])
+  const [outlook, setOutlook] = useState<CalEvent[]>([])
   const load = () => api.items().then(setItems).catch(() => {})
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    load()
+    const now = new Date()
+    api.calendarEvents(now, new Date(now.getTime() + 7 * 86_400_000))
+      .then((r) => setOutlook(r.events.filter((e) => new Date(e.end) > new Date())))
+      .catch(() => {})
+  }, [])
   return (
     <aside className="rail">
       {WIDGETS.map((w) => (
-        <Widget key={w.kind} cfg={w} items={items.filter((i) => i.kind === w.kind)} reload={load} />
+        <Widget key={w.kind} cfg={w} items={items.filter((i) => i.kind === w.kind)} reload={load}
+          extra={w.kind === 'meeting' ? outlook : undefined} />
       ))}
     </aside>
   )
@@ -156,8 +176,14 @@ export function Calendar({ onClose }: { onClose: () => void }) {
   const [month, setMonth] = useState(new Date(today.getFullYear(), today.getMonth(), 1))
   const [selected, setSelected] = useState(today)
   const [items, setItems] = useState<Item[]>([])
+  const [events, setEvents] = useState<CalEvent[]>([])
 
   useEffect(() => { api.items().then(setItems).catch(() => {}) }, [])
+  useEffect(() => {
+    const start = new Date(month.getFullYear(), month.getMonth(), 1 - new Date(month.getFullYear(), month.getMonth(), 1).getDay())
+    const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 42)
+    api.calendarEvents(start, end).then((r) => setEvents(r.events)).catch(() => setEvents([]))
+  }, [month])
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
     window.addEventListener('keydown', onKey)
@@ -166,11 +192,18 @@ export function Calendar({ onClose }: { onClose: () => void }) {
 
   const dated = items.filter((i) => i.due_at)
   const forDay = (d: Date) => dated.filter((i) => sameDay(new Date(i.due_at!), d))
+  const dayStart = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate())
+  const eventsOn = (d: Date) => {
+    const a = dayStart(d)
+    const b = new Date(a.getFullYear(), a.getMonth(), a.getDate() + 1)
+    return events.filter((e) => new Date(e.start) < b && new Date(e.end) > a)
+  }
   const first = new Date(month.getFullYear(), month.getMonth(), 1)
   const cells = Array.from({ length: 42 }, (_, n) => new Date(first.getFullYear(), first.getMonth(), 1 - first.getDay() + n))
   const rows = cells[35].getMonth() === month.getMonth() ? 6 : 5
   const shift = (n: number) => setMonth(new Date(month.getFullYear(), month.getMonth() + n, 1))
   const dayItems = forDay(selected)
+  const dayEvents = eventsOn(selected)
   const icons: Record<string, string> = { task: '✅', call: '📞', email: '✉️', meeting: '📅', reminder: '🔔' }
 
   return (
@@ -188,7 +221,7 @@ export function Calendar({ onClose }: { onClose: () => void }) {
         <div className="cal-grid">
           {DAYS.map((d) => <b key={d} className="cal-dow">{d}</b>)}
           {cells.slice(0, rows * 7).map((d) => {
-            const n = forDay(d).length
+            const n = forDay(d).length + eventsOn(d).length
             const cls = ['cal-day', d.getMonth() !== month.getMonth() && 'other', sameDay(d, today) && 'today', sameDay(d, selected) && 'sel'].filter(Boolean).join(' ')
             return (
               <button key={d.toISOString()} className={cls} onClick={() => setSelected(d)}>
@@ -199,11 +232,16 @@ export function Calendar({ onClose }: { onClose: () => void }) {
           })}
         </div>
         <h3 className="cal-sel">{selected.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' })}</h3>
-        {dayItems.length === 0 && <p className="empty">Nothing scheduled.</p>}
+        {dayItems.length === 0 && dayEvents.length === 0 && <p className="empty">Nothing scheduled.</p>}
         <ul className="steps">
           {dayItems.map((i) => (
             <li key={i.id} className={i.done ? 'done' : ''}>
               <span>{icons[i.kind]} {i.title} <small>· {new Date(i.due_at!).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</small></span>
+            </li>
+          ))}
+          {dayEvents.map((e) => (
+            <li key={e.id}>
+              <span><span className="outlook-tag">Outlook</span>{e.title} <small>· {evTime(e)}{e.location ? ` · ${e.location}` : ''}</small></span>
             </li>
           ))}
         </ul>

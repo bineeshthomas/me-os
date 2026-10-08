@@ -4,6 +4,8 @@ export interface Note { id: number; title: string; body: string; created_at: str
 export type Kind = 'task' | 'call' | 'email' | 'meeting' | 'reminder'
 export interface Item { id: number; kind: Kind; title: string; due_at: string | null; done: boolean }
 export interface SearchHit { type: 'project' | 'step' | 'note' | Kind; id: number; title: string; snippet: string | null }
+export interface CalEvent { id: string; title: string; start: string; end: string; allDay: boolean; location: string | null }
+export interface CalendarStatus { connected: boolean; host?: string }
 export interface Dashboard {
   counts: { projects: number; notes: number; open_steps: number; done_steps: number }
   projects: Project[]
@@ -16,7 +18,10 @@ async function req<T>(method: string, path: string, body?: unknown): Promise<T> 
     headers: body ? { 'Content-Type': 'application/json' } : undefined,
     body: body ? JSON.stringify(body) : undefined,
   })
-  if (!res.ok) throw new Error(`${method} ${path} failed (${res.status})`)
+  if (!res.ok) {
+    const msg = await res.json().then((b) => b?.error as string | undefined, () => undefined)
+    throw new Error(msg ?? `${method} ${path} failed (${res.status})`)
+  }
   return res.status === 204 ? (undefined as T) : res.json()
 }
 
@@ -34,6 +39,11 @@ export const api = {
   setItemDone: (id: number, done: boolean) => req<Item>('PATCH', `/items/${id}`, { done }),
   deleteItem: (id: number) => req<void>('DELETE', `/items/${id}`),
   search: (q: string) => req<SearchHit[]>('GET', `/search?q=${encodeURIComponent(q)}`),
+  settings: () => req<{ calendar: CalendarStatus }>('GET', '/settings'),
+  saveCalendar: (url: string) => req<{ calendar: CalendarStatus }>('PUT', '/settings/calendar', { url }),
+  removeCalendar: () => req<void>('DELETE', '/settings/calendar'),
+  calendarEvents: (from: Date, to: Date) =>
+    req<{ connected: boolean; events: CalEvent[] }>('GET', `/calendar/events?from=${from.toISOString()}&to=${to.toISOString()}`),
   notes: () => req<Note[]>('GET', '/notes'),
   createNote: (title: string, body: string) => req<Note>('POST', '/notes', { title, body }),
   updateNote: (id: number, title: string, body: string) => req<Note>('PATCH', `/notes/${id}`, { title, body }),

@@ -2,12 +2,14 @@ import { useEffect, useState } from 'react'
 import Dashboard from './pages/Dashboard'
 import Projects from './pages/Projects'
 import Notes from './pages/Notes'
+import Settings from './pages/Settings'
 import { Calendar, Search, Weather, WidgetRail } from './components'
 
 const PAGES = {
   home: { label: 'Home', icon: '🏠', title: 'Dashboard ⚓', subtitle: 'Personal Control Surface', view: Dashboard },
   projects: { label: 'Projects', icon: '📋', title: 'Projects 📋', subtitle: 'Structured Goals & Milestones', view: Projects },
   notes: { label: 'Notes', icon: '📝', title: 'Notes 📝', subtitle: 'Instant Context & Ideas', view: Notes },
+  settings: { label: 'Settings', icon: '⚙️', title: 'Settings ⚙️', subtitle: 'Connections & Preferences', view: Settings },
 } as const
 type Key = keyof typeof PAGES
 

@@ -172,3 +172,46 @@ api.get("/search", async (req, res) => {
   );
   res.json(rows);
 });
+
+// Settings: Outlook / ICS calendar link (the URL itself never leaves the server)
+import { clearCalendarCache, getCalendarUrl, getEvents, normalizeCalendarUrl } from "./calendar.js";
+
+api.get("/settings", async (_req, res) => {
+  const url = await getCalendarUrl();
+  res.json({ calendar: url ? { connected: true, host: new URL(url).host } : { connected: false } });
+});
+
+api.put("/settings/calendar", async (req, res) => {
+  let url: string;
+  try {
+    url = normalizeCalendarUrl(String(req.body?.url ?? ""));
+    clearCalendarCache();
+    await getEvents(url, new Date(), new Date(Date.now() + 86_400_000)); // validate: fetch + parse
+  } catch (e) {
+    return res.status(400).json({ error: `Could not read that calendar: ${(e as Error).message}` });
+  }
+  await pool.query(
+    "INSERT INTO settings (key, value) VALUES ('calendar_url', $1) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value",
+    [url],
+  );
+  res.json({ calendar: { connected: true, host: new URL(url).host } });
+});
+
+api.delete("/settings/calendar", async (_req, res) => {
+  await pool.query("DELETE FROM settings WHERE key = 'calendar_url'");
+  clearCalendarCache();
+  res.status(204).end();
+});
+
+api.get("/calendar/events", async (req, res) => {
+  const url = await getCalendarUrl();
+  if (!url) return res.json({ connected: false, events: [] });
+  const from = new Date(String(req.query.from));
+  const to = new Date(String(req.query.to));
+  if (Number.isNaN(+from) || Number.isNaN(+to)) return res.status(400).json({ error: "from and to are required" });
+  try {
+    res.json({ connected: true, events: await getEvents(url, from, to) });
+  } catch (e) {
+    res.status(502).json({ connected: true, events: [], error: (e as Error).message });
+  }
+});

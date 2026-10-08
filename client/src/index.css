@@ -159,3 +159,6 @@ p.card { margin: 0; }
 .cal-sel { margin: 8px 0 4px; }
 .pill.clock { cursor: pointer; }
 @media (max-width: 700px) { .cal-day { min-height: 48px; padding: 4px; } }
+.ok { color: var(--mint-dark); font-size: 13px; }
+.outlook-tag { font-size: 10px; background: #dbeafe; color: #1d4ed8; padding: 1px 6px; border-radius: 6px; margin-right: 4px; }
+.cal-day i.ol { background: #dbeafe; color: #1d4ed8; }

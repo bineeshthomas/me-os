@@ -24,6 +24,7 @@ Copy `server/.env.example` to `server/.env` if it doesn't exist.
 - **Notes** - quick notes (create, edit, delete)
 - **Widget rail** - Focus Tasks, Calls, Emails, Meetings, Reminders (add, tick off, delete; calls/meetings/reminders take a date and time)
 - **Search** - Ctrl/Cmd+K searches projects, steps, notes and widget items
+- **Settings** - connect an Outlook calendar by pasting its published ICS link (stored server-side, never sent back to the browser)
 - **Calendar** - click the date/time in the header for a month view with items due each day
 - **Header** - weather (Open-Meteo, click to change city; default New Delhi) plus date and time
 
