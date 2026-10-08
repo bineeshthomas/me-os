@@ -1,11 +1,25 @@
-CREATE TABLE IF NOT EXISTS activities (
+DROP TABLE IF EXISTS activities;
+
+CREATE TABLE IF NOT EXISTS projects (
   id          SERIAL PRIMARY KEY,
   title       TEXT NOT NULL,
-  notes       TEXT,
-  date        DATE NOT NULL DEFAULT CURRENT_DATE,
-  start_time  TIME,
-  end_time    TIME,
-  done        BOOLEAN NOT NULL DEFAULT FALSE,
+  description TEXT,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-CREATE INDEX IF NOT EXISTS activities_date_idx ON activities (date);
+
+CREATE TABLE IF NOT EXISTS project_steps (
+  id         SERIAL PRIMARY KEY,
+  project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  title      TEXT NOT NULL,
+  done       BOOLEAN NOT NULL DEFAULT FALSE,
+  position   INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS project_steps_project_idx ON project_steps (project_id);
+
+CREATE TABLE IF NOT EXISTS notes (
+  id         SERIAL PRIMARY KEY,
+  title      TEXT NOT NULL,
+  body       TEXT NOT NULL DEFAULT '',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);

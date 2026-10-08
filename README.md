@@ -18,8 +18,13 @@ npm run dev:client   # UI on http://localhost:5173 (proxies /api to the API)
 
 Copy `server/.env.example` to `server/.env` if it doesn't exist.
 
+## Features
+- **Dashboard** - counts, active project progress, recent notes
+- **Projects** - roadmaps made of step-by-step phases you tick off
+- **Notes** - quick notes (create, edit, delete)
+
 ## API
-- `GET /api/activities?date=YYYY-MM-DD`
-- `POST /api/activities`
-- `PATCH /api/activities/:id`
-- `DELETE /api/activities/:id`
+- `GET /api/dashboard`
+- `GET|POST /api/projects`, `PATCH|DELETE /api/projects/:id`
+- `POST /api/projects/:id/steps`, `PATCH|DELETE /api/steps/:id`
+- `GET|POST /api/notes`, `PATCH|DELETE /api/notes/:id`
