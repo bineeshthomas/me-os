@@ -26,6 +26,9 @@ Copy `server/.env.example` to `server/.env` if it doesn't exist.
 - **Search** - Ctrl/Cmd+K searches projects, steps, notes and widget items
 - **Header** - weather (Open-Meteo, click to change city; default New Delhi) plus date and time
 
+## Progressive web app
+The client is an installable PWA (manifest, icons, service worker). Build it with `npm --prefix client run build`, serve it with `npx --prefix client vite preview`, then use your browser's Install option. The app shell works offline, and the last-loaded data is shown when the API is unreachable. Edits need a connection. Regenerate icons from `client/public/favicon.svg` with `npx pwa-assets-generator` in `client/`.
+
 ## API
 - `GET /api/dashboard`
 - `GET|POST /api/projects`, `PATCH|DELETE /api/projects/:id`

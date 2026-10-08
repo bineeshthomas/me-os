@@ -16,8 +16,21 @@ const current = (): Key => {
   return h in PAGES ? (h as Key) : 'home'
 }
 
+function useOnline() {
+  const [online, setOnline] = useState(navigator.onLine)
+  useEffect(() => {
+    const on = () => setOnline(true)
+    const off = () => setOnline(false)
+    window.addEventListener('online', on)
+    window.addEventListener('offline', off)
+    return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off) }
+  }, [])
+  return online
+}
+
 export default function App() {
   const [page, setPage] = useState<Key>(current)
+  const online = useOnline()
   const [time, setTime] = useState(() => new Date())
 
   useEffect(() => {
@@ -44,6 +57,7 @@ export default function App() {
         ))}
       </nav>
       <div className="main">
+        {!online && <div className="offline">You're offline — showing saved data. Changes need a connection.</div>}
         <header>
           <div><h1>{title}</h1><small>{subtitle}</small></div>
           <Search />

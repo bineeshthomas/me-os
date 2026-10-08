@@ -65,3 +65,4 @@ button.pill { cursor: pointer; }
 .widget .head { align-items: center; }
 .searchbtn { display: flex; align-items: center; gap: 8px; }
 .searchbtn kbd { margin-left: auto; }
+.offline { background: #fdf0e1; color: #8a5a14; text-align: center; padding: 6px; font-size: 13px; }
