@@ -105,7 +105,8 @@ export function WidgetRail() {
   useEffect(() => {
     load()
     const now = new Date()
-    api.calendarEvents(now, new Date(now.getTime() + 7 * 86_400_000))
+    // Today and tomorrow only: up to midnight at the end of tomorrow
+    api.calendarEvents(now, new Date(now.getFullYear(), now.getMonth(), now.getDate() + 2))
       .then((r) => setOutlook(r.events.filter((e) => new Date(e.end) > new Date())))
       .catch(() => {})
   }, [])

@@ -54,9 +54,12 @@ export async function getEvents(url: string, from: Date, to: Date): Promise<Cale
     const item = entry as VEvent;
     if (item.status === "CANCELLED") continue;
     for (const inst of ical.expandRecurringEvent(item, { from, to, expandOngoing: true })) {
+      const title = text(inst.summary) ?? "(no title)";
+      // Outlook marks cancelled meetings by prefixing the title, not always with STATUS:CANCELLED
+      if (/^\s*cancell?ed\s*:/i.test(title)) continue;
       out.push({
         id: `${item.uid}_${inst.start.toISOString()}`,
-        title: text(inst.summary) ?? "(no title)",
+        title,
         start: inst.start.toISOString(),
         end: inst.end.toISOString(),
         allDay: inst.isFullDay,
