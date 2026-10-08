@@ -1,0 +1,373 @@
+import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import { api, type CalEvent, type ReviewDay, type ReviewRow, type WeekSummary } from '../api'
+
+const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+const addDays = (date: string, n: number) => {
+  const [y, m, d] = date.split('-').map(Number)
+  return ymd(new Date(y, m - 1, d + n))
+}
+const prettyDate = (date: string) => {
+  const [y, m, d] = date.split('-').map(Number)
+  return new Date(y, m - 1, d).toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' })
+}
+
+const KIND_ICON: Record<string, string> = { task: '✅', call: '📞', email: '✉️', message: '💬', reminder: '🔔' }
+const MOODS = ['😞', '🙁', '😐', '🙂', '😄']
+const STEPS = [1, 2, 5, 10]
+
+type Fields = {
+  wins: string; went_well: string; blocker: string; learned: string; brain_dump: string; gratitude: string
+  priorities: string[]; rating: number | null; energy: number | null; stress: number
+}
+
+const toFields = (r: ReviewRow | null, stress: number): Fields => ({
+  wins: r?.wins ?? '', went_well: r?.went_well ?? '', blocker: r?.blocker ?? '', learned: r?.learned ?? '',
+  brain_dump: r?.brain_dump ?? '', gratitude: r?.gratitude ?? '',
+  priorities: [0, 1, 2].map((i) => r?.priorities[i] ?? ''), rating: r?.rating ?? null, energy: r?.energy ?? null,
+  stress: r?.stress ?? stress,
+})
+
+export default function DailyReview() {
+  const today = ymd(new Date())
+  const [date, setDate] = useState(today)
+  const [day, setDay] = useState<ReviewDay | null>(null)
+  const [week, setWeek] = useState<WeekSummary | null>(null)
+  const [f, setF] = useState<Fields | null>(null)
+  const [tomorrowMeetings, setTomorrowMeetings] = useState<CalEvent[]>([])
+  const [error, setError] = useState('')
+  const [decided, setDecided] = useState<Record<number, string>>({})
+
+  // Refetch what other cards depend on, without touching what's being typed
+  const refresh = useCallback(async () => {
+    try {
+      const [d, w] = await Promise.all([api.reviewDay(date), api.weekSummary(date)])
+      setDay(d); setWeek(w)
+    } catch (e) { setError((e as Error).message) }
+  }, [date])
+
+  useEffect(() => {
+    let cancelled = false
+    setF(null); setDecided({})
+    ;(async () => {
+      try {
+        const [d, w, s] = await Promise.all([api.reviewDay(date), api.weekSummary(date), api.settings()])
+        if (cancelled) return
+        setDay(d); setWeek(w); setF(toFields(d.review, s.stress))
+        const [y, m, dd] = addDays(date, 1).split('-').map(Number)
+        const r = await api.calendarEvents(new Date(y, m - 1, dd), new Date(y, m - 1, dd + 1)).catch(() => ({ events: [] as CalEvent[] }))
+        if (!cancelled) setTomorrowMeetings(r.events)
+      } catch (e) { if (!cancelled) setError((e as Error).message) }
+    })()
+    return () => { cancelled = true }
+  }, [date])
+
+  if (!day || !f) return error ? <p className="error">{error}</p> : <p className="empty">Loading…</p>
+
+  const completed = !!day.review?.completed_at
+  const set = (patch: Partial<Fields>) => setF({ ...f, ...patch })
+  const save = (patch: Partial<ReviewRow> & { complete?: boolean }) =>
+    api.saveReview(date, patch).then(refresh).catch((e) => setError(e.message))
+
+  const textField = (key: 'wins' | 'went_well' | 'blocker' | 'learned' | 'brain_dump', placeholder: string, rows = 2) => (
+    <textarea
+      rows={rows} placeholder={placeholder} value={f[key]}
+      onChange={(e) => set({ [key]: e.target.value })}
+      onBlur={() => save({ [key]: f[key] })}
+    />
+  )
+
+  return (
+    <>
+      {error && <p className="error">{error}</p>}
+
+      <section className="card rv-head">
+        <div className="actions">
+          <button className="ghost" aria-label="Previous day" onClick={() => setDate(addDays(date, -1))}>‹</button>
+          <input type="date" value={date} max={today} onChange={(e) => e.target.value && setDate(e.target.value)} aria-label="Review date" />
+          <button className="ghost" aria-label="Next day" disabled={date >= today} onClick={() => setDate(addDays(date, 1))}>›</button>
+          <strong>{prettyDate(date)}</strong>
+        </div>
+        <div className="badges">
+          <span className="badge">🔥 {day.review_streak} night streak</span>
+          <span className="badge">⭐ {day.points_today} pts today</span>
+        </div>
+      </section>
+
+      <CheckIns day={day} date={date} refresh={refresh} setError={setError} />
+
+      <section className="card">
+        <h2>🏆 Today's wins</h2>
+        {day.wins.length > 0 && (
+          <div className="chips">{day.wins.map((w, i) => <span key={i} className="chip">✓ {w}</span>)}</div>
+        )}
+        {textField('wins', day.wins.length ? 'Anything else you’re proud of?' : 'What did you get done or feel good about today?')}
+      </section>
+
+      <OpenItems day={day} decided={decided} setDecided={setDecided} refresh={refresh} setError={setError} />
+
+      <Goals day={day} date={date} refresh={refresh} setError={setError} />
+
+      <section className="card">
+        <h2>🪞 Reflect</h2>
+        <label>What went well?{textField('went_well', 'One or two lines…')}</label>
+        <label>What got in the way?{textField('blocker', 'The blocker, so you can fix it tomorrow…')}</label>
+        <label>One thing I learned{textField('learned', 'A lesson or something to do differently…')}</label>
+      </section>
+
+      <section className="card">
+        <h2>🎯 Tomorrow</h2>
+        <p className="muted">Pick your top 3. They show on the dashboard tomorrow. Make #1 your first task.</p>
+        {f.priorities.map((p, i) => (
+          <input
+            key={i} placeholder={`Priority ${i + 1}`} value={p} aria-label={`Priority ${i + 1}`}
+            onChange={(e) => set({ priorities: f.priorities.map((x, j) => (j === i ? e.target.value : x)) })}
+            onBlur={() => save({ priorities: f.priorities })}
+          />
+        ))}
+        <h3 className="sub">Tomorrow's meetings</h3>
+        {tomorrowMeetings.length === 0 && <p className="empty">Nothing on the calendar (or Outlook isn't connected).</p>}
+        <ul className="steps">
+          {tomorrowMeetings.filter((e) => !e.allDay).map((e) => (
+            <li key={e.id}><span><span className="outlook-tag">Outlook</span>{e.title} <small>· {new Date(e.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</small></span></li>
+          ))}
+        </ul>
+      </section>
+
+      <section className="card">
+        <h2>🌙 Close the day</h2>
+        <label>Brain dump <small className="muted">(get it out of your head so it doesn't keep you awake)</small>{textField('brain_dump', 'Anything on your mind…', 3)}</label>
+        <div className="rv-row">
+          <div>
+            <small className="muted">How was the day?</small>
+            <div className="scale" role="radiogroup" aria-label="Day rating">
+              {MOODS.map((m, i) => (
+                <button key={i} role="radio" aria-checked={f.rating === i + 1} className={f.rating === i + 1 ? 'sel' : ''}
+                  onClick={() => { set({ rating: i + 1 }); save({ rating: i + 1 }) }}>{m}</button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <small className="muted">Energy</small>
+            <div className="scale" role="radiogroup" aria-label="Energy">
+              {[1, 2, 3, 4, 5].map((n) => (
+                <button key={n} role="radio" aria-checked={f.energy === n} className={f.energy === n ? 'sel' : ''}
+                  onClick={() => { set({ energy: n }); save({ energy: n }) }}>{n}</button>
+              ))}
+            </div>
+          </div>
+          <div className="grow">
+            <small className="muted">Stress: {f.stress}</small>
+            <input type="range" min={0} max={100} value={f.stress} aria-label="Stress today"
+              onChange={(e) => set({ stress: Number(e.target.value) })}
+              onPointerUp={() => save({ stress: f.stress })} onKeyUp={() => save({ stress: f.stress })} />
+          </div>
+        </div>
+        <label>One thing I'm grateful for
+          <input placeholder="Optional" value={f.gratitude} onChange={(e) => set({ gratitude: e.target.value })}
+            onBlur={() => save({ gratitude: f.gratitude })} />
+        </label>
+
+        {completed ? (
+          <div className="done-banner">
+            ✨ Review complete. {day.review_streak > 1 ? `${day.review_streak} nights in a row!` : 'Nice start.'} Sleep well 🌙
+            <button className="ghost" onClick={() => save({ complete: false })}>Reopen</button>
+          </div>
+        ) : (
+          <button className="primary finish" onClick={() => save({ complete: true })}>Finish review 🌙</button>
+        )}
+      </section>
+
+      {week && <WeekCard week={week} />}
+    </>
+  )
+}
+
+function CheckIns({ day, date, refresh, setError }: { day: ReviewDay; date: string; refresh: () => void; setError: (m: string) => void }) {
+  const [adding, setAdding] = useState(false)
+  const [name, setName] = useState('')
+  const [icon, setIcon] = useState('')
+  const [points, setPoints] = useState('10')
+
+  const toggle = (id: number, done: boolean) => api.setHabit(date, id, done).then(refresh).catch((e) => setError(e.message))
+  const add = async (e: FormEvent) => {
+    e.preventDefault()
+    await api.createHabit(name, icon, Number(points) || 10).catch((er) => setError(er.message))
+    setName(''); setIcon(''); setPoints('10'); setAdding(false); refresh()
+  }
+
+  return (
+    <section className="card">
+      <div className="head">
+        <h2>💪 Check-ins</h2>
+        <button className="ghost" onClick={() => setAdding(!adding)}>{adding ? 'Cancel' : '+ Add habit'}</button>
+      </div>
+      <div className="habits">
+        {day.habits.map((h) => (
+          <div key={h.id} className="habit-wrap">
+            <button className={h.done ? 'habit done' : 'habit'} aria-pressed={h.done} onClick={() => toggle(h.id, !h.done)}>
+              <span className="hicon">{h.done ? '✅' : h.icon}</span>
+              <b>{h.name}</b>
+              <small>{h.done ? 'Done!' : `+${h.points} pts`}</small>
+              {h.streak > 0 && <em>🔥 {h.streak} day{h.streak > 1 ? 's' : ''}</em>}
+            </button>
+            <button className="habit-x ghost" aria-label={`Delete ${h.name}`}
+              onClick={() => confirm(`Delete "${h.name}" and its history?`) && api.deleteHabit(h.id).then(refresh)}>✕</button>
+          </div>
+        ))}
+      </div>
+      {day.habits.length === 0 && !adding && <p className="empty">No check-ins yet. Add one, like "Meditated".</p>}
+      {adding && (
+        <form className="linkform" onSubmit={add}>
+          <input className="emoji" placeholder="🙂" maxLength={4} value={icon} onChange={(e) => setIcon(e.target.value)} aria-label="Emoji" />
+          <input required placeholder="Name (e.g. Meditated)" value={name} onChange={(e) => setName(e.target.value)} />
+          <input type="number" min={1} className="pts" value={points} onChange={(e) => setPoints(e.target.value)} aria-label="Points" />
+          <button className="primary">Add</button>
+        </form>
+      )}
+    </section>
+  )
+}
+
+function OpenItems({ day, decided, setDecided, refresh, setError }: {
+  day: ReviewDay; decided: Record<number, string>; setDecided: (d: Record<number, string>) => void; refresh: () => void; setError: (m: string) => void
+}) {
+  if (day.open_items.length === 0) return null
+  const act = async (id: number, what: 'keep' | 'tomorrow' | 'drop', dueAt: string | null) => {
+    try {
+      if (what === 'drop') await api.deleteItem(id)
+      if (what === 'tomorrow') {
+        const t = new Date()
+        t.setDate(t.getDate() + 1)
+        if (dueAt) { const d = new Date(dueAt); t.setHours(d.getHours(), d.getMinutes(), 0, 0) } else t.setHours(9, 0, 0, 0)
+        await api.setItemDue(id, t.toISOString())
+      }
+      setDecided({ ...decided, [id]: what === 'keep' ? 'Kept' : what === 'tomorrow' ? 'Moved to tomorrow' : 'Dropped' })
+      if (what === 'drop') refresh()
+    } catch (e) { setError((e as Error).message) }
+  }
+  return (
+    <section className="card">
+      <h2>📋 Not finished</h2>
+      <p className="muted">For each one: keep it, move it to tomorrow, or let it go.</p>
+      <ul className="steps">
+        {day.open_items.filter((i) => decided[i.id] !== 'Dropped').map((i) => (
+          <li key={i.id}>
+            <span>{KIND_ICON[i.kind]} {i.title}</span>
+            {decided[i.id] ? <small className="chip">{decided[i.id]}</small> : (
+              <span className="actions">
+                <button className="ghost" onClick={() => act(i.id, 'keep', i.due_at)}>Keep</button>
+                <button className="ghost" onClick={() => act(i.id, 'tomorrow', i.due_at)}>→ Tomorrow</button>
+                <button className="ghost" onClick={() => act(i.id, 'drop', i.due_at)}>Drop</button>
+              </span>
+            )}
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+
+function Goals({ day, date, refresh, setError }: { day: ReviewDay; date: string; refresh: () => void; setError: (m: string) => void }) {
+  const [notes, setNotes] = useState<Record<number, string>>({})
+  const [adding, setAdding] = useState(false)
+  const [title, setTitle] = useState('')
+  const [why, setWhy] = useState('')
+  const [target, setTarget] = useState('100')
+  const [cheer, setCheer] = useState('')
+
+  const addPoints = async (goalId: number, pts: number) => {
+    try {
+      const r = await api.addGoalEntry(goalId, date, pts, notes[goalId] ?? '')
+      setNotes({ ...notes, [goalId]: '' })
+      setCheer(r.achieved ? '🎉 Goal achieved! Amazing work.' : `+${pts} toward your goal. Every tiny step counts.`)
+      refresh()
+    } catch (e) { setError((e as Error).message) }
+  }
+  const create = async (e: FormEvent) => {
+    e.preventDefault()
+    await api.createGoal(title, why, Number(target) || 100).catch((er) => setError(er.message))
+    setTitle(''); setWhy(''); setTarget('100'); setAdding(false); refresh()
+  }
+
+  return (
+    <section className="card">
+      <div className="head">
+        <h2>🌱 Goals: a tiny step for a big goal</h2>
+        <button className="ghost" onClick={() => setAdding(!adding)}>{adding ? 'Cancel' : '+ New goal'}</button>
+      </div>
+      {cheer && <p className="ok" role="status">{cheer}</p>}
+      {adding && (
+        <form className="form" onSubmit={create}>
+          <input required placeholder="Goal (e.g. Learn Spanish)" value={title} onChange={(e) => setTitle(e.target.value)} />
+          <input placeholder="Why does it matter? (optional)" value={why} onChange={(e) => setWhy(e.target.value)} />
+          <label className="inline">Points to reach it <input type="number" min={1} className="pts" value={target} onChange={(e) => setTarget(e.target.value)} /></label>
+          <button className="primary">Create goal</button>
+        </form>
+      )}
+      {day.goals.length === 0 && !adding && <p className="empty">No goals yet. Add one big thing you want, then move it forward a little each night.</p>}
+      {day.goals.map((g) => {
+        const pct = Math.min(100, Math.round((g.total / g.target_points) * 100))
+        const achieved = !!g.achieved_at
+        return (
+          <div key={g.id} className="goal">
+            <div className="head">
+              <b>{achieved && '🏅 '}{g.title}</b>
+              <button className="ghost" aria-label={`Delete ${g.title}`}
+                onClick={() => confirm(`Delete goal "${g.title}" and its history?`) && api.deleteGoal(g.id).then(refresh)}>✕</button>
+            </div>
+            {g.why && <small className="muted">Why: {g.why}</small>}
+            <div className="pmeta"><div className="bar"><i style={{ width: `${pct}%` }} /></div><small>{g.total}/{g.target_points} pts · {pct}%</small></div>
+            {achieved ? <p className="ok">🎉 Achieved!</p> : (
+              <>
+                <p className="ask">Anything to add toward this goal today?</p>
+                <input placeholder="What did you do? (optional)" value={notes[g.id] ?? ''} onChange={(e) => setNotes({ ...notes, [g.id]: e.target.value })} />
+                <div className="steps-row">
+                  {STEPS.map((n) => <button key={n} className="app-btn" onClick={() => addPoints(g.id, n)}>+{n}</button>)}
+                  <small className="muted">1 = tiny step · 5 = solid effort · 10 = big push</small>
+                </div>
+              </>
+            )}
+            {g.today.length > 0 && (
+              <ul className="steps">
+                {g.today.map((e) => (
+                  <li key={e.id}><span>+{e.points} pts{e.note && <small> · {e.note}</small>}</span>
+                    <button className="ghost" aria-label="Remove entry" onClick={() => api.deleteGoalEntry(e.id).then(refresh)}>✕</button></li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )
+      })}
+    </section>
+  )
+}
+
+function WeekCard({ week }: { week: WeekSummary }) {
+  const dow = (date: string) => { const [y, m, d] = date.split('-').map(Number); return new Date(y, m - 1, d).toLocaleDateString([], { weekday: 'short' }) }
+  return (
+    <section className="card">
+      <h2>📈 This week</h2>
+      <div className="week">
+        {week.days.map((d) => (
+          <div key={d.date} className={d.reviewed ? 'wday ok' : 'wday'} title={`${d.date}: ${d.points} pts`}>
+            <small>{dow(d.date)}</small>
+            <span>{d.reviewed ? (d.rating ? ['😞', '🙁', '😐', '🙂', '😄'][d.rating - 1] : '✓') : '·'}</span>
+            <small>{d.points} pts</small>
+          </div>
+        ))}
+      </div>
+      <div className="stats wstats">
+        <div className="card stat"><b>{week.reviews_done}/7</b><span>Reviews done</span></div>
+        <div className="card stat"><b>{week.avg_rating ?? '–'}</b><span>Avg day rating</span></div>
+        <div className="card stat"><b>{week.avg_stress ?? '–'}</b><span>Avg stress</span></div>
+        <div className="card stat"><b>{week.points_total}</b><span>Points</span></div>
+      </div>
+      {week.habits.length > 0 && (
+        <div className="chips">{week.habits.map((h) => <span key={h.id} className="chip">{h.icon} {h.name}: {h.count}/7</span>)}</div>
+      )}
+      {week.goals.length > 0 && (
+        <div className="chips">{week.goals.map((g) => <span key={g.id} className="chip">🌱 {g.title}: +{g.points} pts</span>)}</div>
+      )}
+    </section>
+  )
+}

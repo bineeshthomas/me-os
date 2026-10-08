@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react'
-import { api, type Dashboard as Data } from '../api'
+import { api, type Dashboard as Data, type Focus } from '../api'
 
 const progress = (steps: { done: boolean }[]) =>
   steps.length ? Math.round((steps.filter((s) => s.done).length / steps.length) * 100) : 0
 
 export default function Dashboard() {
   const [data, setData] = useState<Data | null>(null)
+  const [focus, setFocus] = useState<Focus | null>(null)
   const [error, setError] = useState('')
 
   useEffect(() => {
     api.dashboard().then(setData).catch((e) => setError(e.message))
+    api.focus().then(setFocus).catch(() => {})
   }, [])
 
   if (error) return <p className="error">{error}</p>
@@ -24,6 +26,29 @@ export default function Dashboard() {
         <div className="card stat"><b>{counts.done_steps}</b><span>Steps done</span></div>
         <div className="card stat"><b>{counts.notes}</b><span>Notes</span></div>
       </div>
+
+      {focus && focus.priorities.length > 0 && (
+        <section className="card">
+          <h2>🎯 Today's top {focus.priorities.length}</h2>
+          <ol className="top3">{focus.priorities.map((p, i) => <li key={i}>{p}</li>)}</ol>
+        </section>
+      )}
+
+      {focus && focus.goals.length > 0 && (
+        <section className="card">
+          <h2>🌱 Goals <a href="#review" className="more">Log a step</a></h2>
+          {focus.goals.map((g) => {
+            const pct = Math.min(100, Math.round((g.total / g.target_points) * 100))
+            return (
+              <div key={g.id} className="row">
+                <span>{g.title}</span>
+                <div className="bar"><i style={{ width: `${pct}%` }} /></div>
+                <small>{pct}%</small>
+              </div>
+            )
+          })}
+        </section>
+      )}
 
       <section className="card">
         <h2>Active projects</h2>

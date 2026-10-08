@@ -231,3 +231,72 @@ p.card { margin: 0; }
 }
 .widget .head .ghost:hover { background: var(--mint); color: var(--mint-dark); }
 .widget .head .ghost:active { transform: scale(.94); }
+
+/* Daily review */
+.rv-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.rv-head input[type=date] { width: auto; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; }
+.badge { background: #fff4d6; color: #7a5a00; border-radius: 999px; padding: 4px 12px; font-weight: 600; font-size: 12px; }
+.card label { display: flex; flex-direction: column; gap: 4px; margin-top: 10px; font-size: 13px; font-weight: 600; }
+.card label small { font-weight: 400; }
+.card label.inline { flex-direction: row; align-items: center; gap: 8px; }
+.card h2 + p, .card h2 + .chips, .card h2 + textarea { margin-top: 6px; }
+.card textarea { width: 100%; resize: vertical; font-weight: 400; }
+.sub { margin: 12px 0 4px; font-size: 13px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.chip { background: #eef7f1; color: var(--mint-dark); border-radius: 999px; padding: 3px 10px; font-size: 12px; }
+
+.habits { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-top: 8px; }
+.habit-wrap { position: relative; }
+.habit { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 14px 8px; border-radius: 16px; background: #fff; border: 2px dashed var(--line); color: var(--ink); font: inherit; transition: transform .1s, border-color .15s, background .15s; }
+.habit:hover { border-color: var(--mint-dark); transform: translateY(-1px); }
+.habit:active { transform: scale(.97); }
+.hicon { font-size: 30px; line-height: 1.1; }
+.habit small { color: var(--muted); }
+.habit em { font-style: normal; font-size: 12px; color: #b45309; font-weight: 600; }
+.habit.done { background: linear-gradient(180deg, #eaf7ef, #d8f0e2); border: 2px solid var(--mint-dark); animation: pop .35s ease-out; }
+.habit.done small { color: var(--mint-dark); font-weight: 600; }
+.habit-x { position: absolute; top: 4px; right: 4px; opacity: 0; font-size: 11px; }
+.habit-wrap:hover .habit-x, .habit-x:focus { opacity: 1; }
+@keyframes pop { 0% { transform: scale(.92); } 60% { transform: scale(1.06); } 100% { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .habit.done { animation: none; } }
+@media (hover: none) { .habit-x { opacity: .6; } }
+.emoji { width: 64px !important; flex: 0 0 64px !important; text-align: center; }
+.pts { width: 80px !important; flex: 0 0 80px !important; }
+
+.goal { border-top: 1px solid var(--line); padding: 10px 0 4px; display: flex; flex-direction: column; gap: 6px; }
+.goal .head { align-items: center; }
+.goal .pmeta .bar { height: 8px; }
+.ask { font-weight: 600; margin: 4px 0 0; }
+.steps-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+
+.rv-row { display: flex; gap: 20px; flex-wrap: wrap; margin: 12px 0 4px; align-items: flex-end; }
+.rv-row .grow { flex: 1 1 200px; }
+.rv-row input[type=range] { padding: 0; accent-color: var(--mint-dark); }
+.scale { display: flex; gap: 4px; margin-top: 4px; }
+.scale button { min-width: 38px; height: 38px; border-radius: 12px; border: 1.5px solid var(--line); background: #fff; font-size: 18px; color: var(--ink); }
+.scale button:hover { border-color: var(--mint-dark); }
+.scale button.sel { border-color: var(--mint-dark); background: #eef7f1; font-weight: 700; }
+.finish { margin-top: 14px; padding: 12px 22px; font-size: 14px; align-self: flex-start; }
+.done-banner { margin-top: 14px; background: #eaf7ef; color: var(--mint-dark); border-radius: 12px; padding: 10px 14px; font-weight: 600; display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+.week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin: 10px 0; }
+.wday { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 2px; border-radius: 12px; background: var(--bg); border: 1px solid var(--line); }
+.wday.ok { background: #eaf7ef; border-color: var(--mint); }
+.wday span { font-size: 20px; line-height: 1.2; }
+.wstats { grid-template-columns: repeat(4, 1fr); margin-bottom: 8px; }
+@media (max-width: 700px) { .wstats { grid-template-columns: repeat(2, 1fr); } .habits { grid-template-columns: repeat(2, 1fr); } }
+
+.top3 { margin: 6px 0 0; padding-left: 20px; font-size: 14px; }
+.top3 li { padding: 3px 0; }
+.card h2 .more { float: right; font-size: 12px; font-weight: 500; color: var(--accent); text-decoration: none; }
+
+/* Phone: fit six tabs, and stack the "Not finished" actions under the title */
+.actions .ghost, .steps .actions button { white-space: nowrap; }
+@media (max-width: 700px) {
+  nav { overflow-x: auto; justify-content: flex-start; }
+  nav a { flex: 1 0 0; min-width: 52px; padding: 6px 2px; font-size: 10px; text-align: center; }
+  .steps li:has(> .actions) { flex-wrap: wrap; }
+  .steps li:has(> .actions) > span:first-child { flex: 1 1 100%; }
+  .steps li > .actions { margin-left: 28px; }
+}

@@ -22,6 +22,7 @@ Copy `server/.env.example` to `server/.env` if it doesn't exist.
 - **Dashboard** - counts, active project progress, recent notes
 - **Projects** - compact cards, most recently created/updated first; click one to edit its title, description and steps
 - **Notes** - quick notes (create, edit, delete)
+- **Daily Review** - nightly page: one-tap check-ins with streaks (worked out, read...), wins, unfinished items (keep / move to tomorrow / drop), long-term goals advanced by tiny point steps, reflection, top 3 for tomorrow, brain dump, ratings, and a 7-day summary
 - **Links** - save quick-launch links with a name; they open in a new tab (http/https only)
 - **Widget rail** - Focus Tasks, Calls, Emails, Messages (pick WhatsApp or Teams), Meetings, Reminders (add, tick off, delete; meetings and reminders take a date and time)
 - **Completed items** stay on their card, crossed out, until the end of the day they were ticked, then drop off (they stay in the database)
@@ -41,5 +42,7 @@ The client is an installable PWA (manifest, icons, service worker). Build it wit
 - `GET|POST /api/items`, `PATCH|DELETE /api/items/:id`
 - `GET /api/settings`, `PUT /api/settings/calendar`, `PUT /api/settings/stress`
 - `GET /api/search?q=`
+- `GET|PUT /api/review/:date`, `PUT /api/review/:date/habits/:id`, `GET /api/review-summary/:date`, `GET /api/focus`
+- `GET|POST /api/habits`, `GET|POST /api/goals`, `POST /api/goals/:id/entries`
 - `GET|POST /api/links`, `PATCH|DELETE /api/links/:id`
 - `GET|POST /api/notes`, `PATCH|DELETE /api/notes/:id`

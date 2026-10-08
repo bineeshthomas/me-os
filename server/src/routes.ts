@@ -284,3 +284,6 @@ api.delete("/links/:id", async (req, res) => {
   const { rowCount } = await pool.query("DELETE FROM links WHERE id = $1", [req.params.id]);
   res.status(rowCount ? 204 : 404).end();
 });
+
+import { review } from "./review.js";
+api.use(review);

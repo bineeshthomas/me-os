@@ -8,6 +8,26 @@ export interface SearchHit { type: 'project' | 'step' | 'note' | 'link' | Kind; 
 export interface CalEvent { id: string; title: string; start: string; end: string; allDay: boolean; location: string | null }
 export interface CalendarStatus { connected: boolean; host?: string }
 export interface QuickLink { id: number; name: string; url: string }
+export interface Habit { id: number; name: string; icon: string; points: number; done: boolean; streak: number }
+export interface GoalEntry { id: number; goal_id: number; points: number; note: string }
+export interface Goal { id: number; title: string; why: string; target_points: number; total: number; achieved_at: string | null; today: GoalEntry[] }
+export interface ReviewRow {
+  date: string; wins: string; went_well: string; blocker: string; learned: string; priorities: string[]
+  brain_dump: string; gratitude: string; rating: number | null; energy: number | null; stress: number | null; completed_at: string | null
+}
+export interface OpenItem { id: number; kind: Kind; title: string; due_at: string | null; app: MessageApp | null }
+export interface ReviewDay {
+  date: string; review: ReviewRow | null; habits: Habit[]; goals: Goal[]; wins: string[]
+  open_items: OpenItem[]; points_today: number; review_streak: number
+}
+export interface WeekSummary {
+  start: string; end: string; reviews_done: number; avg_rating: number | null; avg_energy: number | null
+  avg_stress: number | null; points_total: number
+  days: { date: string; reviewed: boolean; rating: number | null; habits_done: number; points: number }[]
+  habits: { id: number; name: string; icon: string; count: number }[]
+  goals: { id: number; title: string; points: number }[]
+}
+export interface Focus { priorities: string[]; goals: { id: number; title: string; target_points: number; total: number }[] }
 export interface Dashboard {
   counts: { projects: number; notes: number; open_steps: number; done_steps: number }
   projects: Project[]
@@ -54,6 +74,19 @@ export const api = {
   createLink: (name: string, url: string) => req<QuickLink>('POST', '/links', { name, url }),
   updateLink: (id: number, name: string, url: string) => req<QuickLink>('PATCH', `/links/${id}`, { name, url }),
   deleteLink: (id: number) => req<void>('DELETE', `/links/${id}`),
+  setItemDue: (id: number, due_at: string) => req<Item>('PATCH', `/items/${id}`, { due_at }),
+  reviewDay: (date: string) => req<ReviewDay>('GET', `/review/${date}`),
+  saveReview: (date: string, patch: Partial<ReviewRow> & { complete?: boolean }) => req<ReviewRow>('PUT', `/review/${date}`, patch),
+  weekSummary: (date: string) => req<WeekSummary>('GET', `/review-summary/${date}`),
+  focus: () => req<Focus>('GET', '/focus'),
+  setHabit: (date: string, id: number, done: boolean) => req<void>('PUT', `/review/${date}/habits/${id}`, { done }),
+  createHabit: (name: string, icon: string, points: number) => req<unknown>('POST', '/habits', { name, icon, points }),
+  deleteHabit: (id: number) => req<void>('DELETE', `/habits/${id}`),
+  createGoal: (title: string, why: string, target_points: number) => req<unknown>('POST', '/goals', { title, why, target_points }),
+  deleteGoal: (id: number) => req<void>('DELETE', `/goals/${id}`),
+  addGoalEntry: (id: number, date: string, points: number, note: string) =>
+    req<{ achieved: boolean }>('POST', `/goals/${id}/entries`, { date, points, note }),
+  deleteGoalEntry: (id: number) => req<void>('DELETE', `/goal-entries/${id}`),
   notes: () => req<Note[]>('GET', '/notes'),
   createNote: (title: string, body: string) => req<Note>('POST', '/notes', { title, body }),
   updateNote: (id: number, title: string, body: string) => req<Note>('PATCH', `/notes/${id}`, { title, body }),
