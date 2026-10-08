@@ -147,3 +147,67 @@ export function Search() {
     </>
   )
 }
+
+const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+const sameDay = (a: Date, b: Date) => a.toDateString() === b.toDateString()
+
+export function Calendar({ onClose }: { onClose: () => void }) {
+  const today = new Date()
+  const [month, setMonth] = useState(new Date(today.getFullYear(), today.getMonth(), 1))
+  const [selected, setSelected] = useState(today)
+  const [items, setItems] = useState<Item[]>([])
+
+  useEffect(() => { api.items().then(setItems).catch(() => {}) }, [])
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  const dated = items.filter((i) => i.due_at)
+  const forDay = (d: Date) => dated.filter((i) => sameDay(new Date(i.due_at!), d))
+  const first = new Date(month.getFullYear(), month.getMonth(), 1)
+  const cells = Array.from({ length: 42 }, (_, n) => new Date(first.getFullYear(), first.getMonth(), 1 - first.getDay() + n))
+  const rows = cells[35].getMonth() === month.getMonth() ? 6 : 5
+  const shift = (n: number) => setMonth(new Date(month.getFullYear(), month.getMonth() + n, 1))
+  const dayItems = forDay(selected)
+  const icons: Record<string, string> = { task: '✅', call: '📞', email: '✉️', meeting: '📅', reminder: '🔔' }
+
+  return (
+    <div className="overlay" onClick={onClose}>
+      <div className="card calendar" onClick={(e) => e.stopPropagation()}>
+        <div className="head">
+          <h2>{month.toLocaleDateString([], { month: 'long', year: 'numeric' })}</h2>
+          <div className="actions">
+            <button className="ghost" onClick={() => shift(-1)} aria-label="Previous month">‹</button>
+            <button className="ghost" onClick={() => { setMonth(new Date(today.getFullYear(), today.getMonth(), 1)); setSelected(today) }}>Today</button>
+            <button className="ghost" onClick={() => shift(1)} aria-label="Next month">›</button>
+            <button className="ghost" onClick={onClose} aria-label="Close">✕</button>
+          </div>
+        </div>
+        <div className="cal-grid">
+          {DAYS.map((d) => <b key={d} className="cal-dow">{d}</b>)}
+          {cells.slice(0, rows * 7).map((d) => {
+            const n = forDay(d).length
+            const cls = ['cal-day', d.getMonth() !== month.getMonth() && 'other', sameDay(d, today) && 'today', sameDay(d, selected) && 'sel'].filter(Boolean).join(' ')
+            return (
+              <button key={d.toISOString()} className={cls} onClick={() => setSelected(d)}>
+                <span>{d.getDate()}</span>
+                {n > 0 && <i>{n}</i>}
+              </button>
+            )
+          })}
+        </div>
+        <h3 className="cal-sel">{selected.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' })}</h3>
+        {dayItems.length === 0 && <p className="empty">Nothing scheduled.</p>}
+        <ul className="steps">
+          {dayItems.map((i) => (
+            <li key={i.id} className={i.done ? 'done' : ''}>
+              <span>{icons[i.kind]} {i.title} <small>· {new Date(i.due_at!).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</small></span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  )
+}

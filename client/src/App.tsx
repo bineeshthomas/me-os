@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import Dashboard from './pages/Dashboard'
 import Projects from './pages/Projects'
 import Notes from './pages/Notes'
-import { Search, Weather, WidgetRail } from './components'
+import { Calendar, Search, Weather, WidgetRail } from './components'
 
 const PAGES = {
   home: { label: 'Home', icon: '🏠', title: 'Dashboard ⚓', subtitle: 'Personal Control Surface', view: Dashboard },
@@ -31,6 +31,7 @@ function useOnline() {
 export default function App() {
   const [page, setPage] = useState<Key>(current)
   const online = useOnline()
+  const [calOpen, setCalOpen] = useState(false)
   const [time, setTime] = useState(() => new Date())
 
   useEffect(() => {
@@ -63,11 +64,12 @@ export default function App() {
           <Search />
           <div className="actions">
             <Weather />
-            <span className="pill">
+            <button className="pill clock" onClick={() => setCalOpen(true)} title="Open calendar">
               {time.toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' })} · {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            </span>
+            </button>
           </div>
         </header>
+        {calOpen && <Calendar onClose={() => setCalOpen(false)} />}
         <div className="body"><main><View /></main><WidgetRail /></div>
       </div>
     </div>

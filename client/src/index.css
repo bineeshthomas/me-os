@@ -146,3 +146,16 @@ nav a { padding: 8px 14px; font-size: 13px; }
   .rail { padding: 12px; }
 }
 p.card { margin: 0; }
+
+/* Calendar */
+.calendar { width: min(900px, 94vw); align-self: flex-start; max-height: 88vh; overflow: auto; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin: 10px 0; }
+.cal-dow { text-align: center; font-size: 11px; text-transform: uppercase; color: var(--muted); padding: 4px 0; }
+.cal-day { min-height: 76px; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; padding: 6px 8px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line); font-size: 13px; text-align: left; color: var(--ink); }
+.cal-day.other { opacity: .4; }
+.cal-day.today span { background: var(--accent); color: #fff; border-radius: 99px; padding: 1px 7px; }
+.cal-day.sel { outline: 2px solid var(--mint-dark); }
+.cal-day i { font-style: normal; font-size: 11px; background: var(--mint); color: var(--mint-dark); border-radius: 99px; padding: 1px 7px; align-self: flex-end; }
+.cal-sel { margin: 8px 0 4px; }
+.pill.clock { cursor: pointer; }
+@media (max-width: 700px) { .cal-day { min-height: 48px; padding: 4px; } }
