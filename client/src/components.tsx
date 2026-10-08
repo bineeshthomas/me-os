@@ -1,16 +1,40 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { api, type CalEvent, type Item, type Kind, type SearchHit } from './api'
+import { api, type CalEvent, type Item, type Kind, type MessageApp, type SearchHit } from './api'
 
-const WIDGETS: { kind: Kind; label: string; icon: string; empty: string; timed: boolean }[] = [
+const WIDGETS: { kind: Kind; label: string; icon: string; empty: string; timed: boolean; apps?: boolean }[] = [
   { kind: 'task', label: 'Focus Tasks', icon: '✅', empty: 'Nothing pressing.', timed: false },
   { kind: 'call', label: 'Calls', icon: '📞', empty: 'Nothing on the phone today.', timed: true },
   { kind: 'email', label: 'Emails', icon: '✉️', empty: 'Nothing queued.', timed: false },
+  { kind: 'message', label: 'Messages', icon: '💬', empty: 'No messages to send.', timed: false, apps: true },
   { kind: 'meeting', label: 'Meetings', icon: '📅', empty: 'Nothing on the calendar.', timed: true },
   { kind: 'reminder', label: 'Reminders', icon: '🔔', empty: 'All clear.', timed: true },
 ]
 
 const fmt = (iso: string) =>
   new Date(iso).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+
+const APPS: { id: MessageApp; label: string }[] = [
+  { id: 'whatsapp', label: 'WhatsApp' },
+  { id: 'teams', label: 'Teams' },
+]
+
+export function AppIcon({ app, size = 18 }: { app: MessageApp; size?: number }) {
+  return app === 'whatsapp' ? (
+    <svg width={size} height={size} viewBox="0 0 24 24" role="img" aria-label="WhatsApp">
+      <circle cx="12" cy="12" r="11" fill="#25D366" />
+      <path d="M12 5.5a6.5 6.5 0 0 0-5.6 9.8L5.5 18.5l3.3-.9A6.5 6.5 0 1 0 12 5.5Z" fill="none" stroke="#fff" strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M9.6 9.3c.2-.4.5-.4.7-.3l.5 1.1-.4.6a3.6 3.6 0 0 0 1.9 1.9l.6-.4 1.1.5c.1.2.1.5-.3.8-.8.7-1.9.4-3.1-.6-1.2-1.1-1.7-2.4-1-3.6Z" fill="#fff" />
+    </svg>
+  ) : (
+    <svg width={size} height={size} viewBox="0 0 24 24" role="img" aria-label="Teams">
+      <rect width="24" height="24" rx="6" fill="#5B5FC7" />
+      <circle cx="17" cy="8" r="2.3" fill="#c7c9f2" />
+      <path d="M14.5 11h5v4.5a2.5 2.5 0 0 1-5 0Z" fill="#c7c9f2" />
+      <rect x="4" y="7" width="11" height="10" rx="2" fill="#fff" />
+      <path d="M7 10h5M9.5 10v5" stroke="#5B5FC7" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  )
+}
 
 const evTime = (e: CalEvent) =>
   e.allDay ? 'All day' : new Date(e.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -23,11 +47,12 @@ function Widget({ cfg, items, reload, extra = [] }: { cfg: (typeof WIDGETS)[numb
   const [adding, setAdding] = useState(false)
   const [title, setTitle] = useState('')
   const [due, setDue] = useState('')
+  const [app, setApp] = useState<MessageApp>('whatsapp')
 
   const add = async (e: FormEvent) => {
     e.preventDefault()
     if (!title.trim()) return
-    await api.createItem(cfg.kind, title.trim(), due ? new Date(due).toISOString() : null)
+    await api.createItem(cfg.kind, title.trim(), due ? new Date(due).toISOString() : null, cfg.apps ? app : undefined)
     setTitle(''); setDue(''); setAdding(false)
     reload()
   }
@@ -41,6 +66,15 @@ function Widget({ cfg, items, reload, extra = [] }: { cfg: (typeof WIDGETS)[numb
       {adding && (
         <form onSubmit={add} className="form">
           <input autoFocus placeholder={`New ${cfg.kind}…`} value={title} onChange={(e) => setTitle(e.target.value)} />
+          {cfg.apps && (
+            <div className="apps" role="radiogroup" aria-label="Send via">
+              {APPS.map((a) => (
+                <button key={a.id} type="button" role="radio" aria-checked={app === a.id} className={app === a.id ? 'app-btn sel' : 'app-btn'} onClick={() => setApp(a.id)}>
+                  <AppIcon app={a.id} /> {a.label}
+                </button>
+              ))}
+            </div>
+          )}
           {cfg.timed && <input type="datetime-local" value={due} onChange={(e) => setDue(e.target.value)} />}
           <button className="primary">Add</button>
         </form>
@@ -50,7 +84,7 @@ function Widget({ cfg, items, reload, extra = [] }: { cfg: (typeof WIDGETS)[numb
         {items.map((i) => (
           <li key={i.id} className={i.done ? 'done' : ''}>
             <button className="circle" aria-label="Toggle" onClick={() => api.setItemDone(i.id, !i.done).then(reload)}>{i.done ? '✓' : ''}</button>
-            <span>{i.title}{i.due_at && <small> · {fmt(i.due_at)}</small>}</span>
+            <span>{i.app && <AppIcon app={i.app} size={14} />} {i.title}{i.due_at && <small> · {fmt(i.due_at)}</small>}</span>
             <button className="ghost" aria-label="Delete" onClick={() => api.deleteItem(i.id).then(reload)}>✕</button>
           </li>
         ))}
@@ -204,7 +238,7 @@ export function Calendar({ onClose }: { onClose: () => void }) {
   const shift = (n: number) => setMonth(new Date(month.getFullYear(), month.getMonth() + n, 1))
   const dayItems = forDay(selected)
   const dayEvents = eventsOn(selected)
-  const icons: Record<string, string> = { task: '✅', call: '📞', email: '✉️', meeting: '📅', reminder: '🔔' }
+  const icons: Record<string, string> = { task: '✅', call: '📞', email: '✉️', message: '💬', meeting: '📅', reminder: '🔔' }
 
   return (
     <div className="overlay" onClick={onClose}>

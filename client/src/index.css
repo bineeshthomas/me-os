@@ -162,3 +162,10 @@ p.card { margin: 0; }
 .ok { color: var(--mint-dark); font-size: 13px; }
 .outlook-tag { font-size: 10px; background: #dbeafe; color: #1d4ed8; padding: 1px 6px; border-radius: 6px; margin-right: 4px; }
 .cal-day i.ol { background: #dbeafe; color: #1d4ed8; }
+
+/* Message app picker */
+.apps { display: flex; gap: 6px; }
+.app-btn { display: flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 999px; border: 1.5px solid var(--line); background: #fff; font-size: 12px; color: var(--ink); }
+.app-btn.sel { border-color: var(--mint-dark); background: #eef7f1; font-weight: 600; }
+.steps li svg { flex-shrink: 0; vertical-align: -3px; }
+.widget .head .ghost:hover { color: var(--accent); }

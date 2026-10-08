@@ -116,7 +116,8 @@ api.get("/dashboard", async (_req, res) => {
 });
 
 // Widget items: tasks, calls, emails, meetings, reminders
-const KINDS = ["task", "call", "email", "meeting", "reminder"];
+const KINDS = ["task", "call", "email", "message", "meeting", "reminder"];
+const APPS = ["whatsapp", "teams"];
 
 api.get("/items", async (req, res) => {
   const kind = typeof req.query.kind === "string" ? req.query.kind : null;
@@ -128,13 +129,15 @@ api.get("/items", async (req, res) => {
 });
 
 api.post("/items", async (req, res) => {
-  const { kind, title, due_at } = req.body ?? {};
+  const { kind, title, due_at, app } = req.body ?? {};
   if (!KINDS.includes(kind)) return res.status(400).json({ error: "invalid kind" });
+  if (app != null && !APPS.includes(app)) return res.status(400).json({ error: "invalid app" });
   if (!title) return res.status(400).json({ error: "title is required" });
-  const { rows } = await pool.query("INSERT INTO items (kind, title, due_at) VALUES ($1, $2, $3) RETURNING *", [
+  const { rows } = await pool.query("INSERT INTO items (kind, title, due_at, app) VALUES ($1, $2, $3, $4) RETURNING *", [
     kind,
     title,
     due_at || null,
+    kind === "message" ? (app ?? "whatsapp") : null,
   ]);
   res.status(201).json(rows[0]);
 });
