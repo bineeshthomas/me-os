@@ -61,3 +61,7 @@ button.pill { cursor: pointer; }
 .hit { padding: 8px 10px; border-radius: 10px; color: var(--ink); text-decoration: none; font-size: 14px; }
 .hit:hover { background: var(--bg); }
 .hit small:first-child { text-transform: uppercase; font-size: 10px; background: var(--mint); color: var(--mint-dark); padding: 1px 6px; border-radius: 6px; }
+.widget h4 { display: flex; align-items: center; gap: 8px; }
+.widget .head { align-items: center; }
+.searchbtn { display: flex; align-items: center; gap: 8px; }
+.searchbtn kbd { margin-left: auto; }
