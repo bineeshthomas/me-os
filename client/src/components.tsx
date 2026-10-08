@@ -3,7 +3,7 @@ import { api, type CalEvent, type Item, type Kind, type MessageApp, type SearchH
 
 const WIDGETS: { kind: Kind; label: string; icon: string; empty: string; timed: boolean; apps?: boolean }[] = [
   { kind: 'task', label: 'Focus Tasks', icon: '✅', empty: 'Nothing pressing.', timed: false },
-  { kind: 'call', label: 'Calls', icon: '📞', empty: 'Nothing on the phone today.', timed: true },
+  { kind: 'call', label: 'Calls', icon: '📞', empty: 'Nothing on the phone today.', timed: false },
   { kind: 'email', label: 'Emails', icon: '✉️', empty: 'Nothing queued.', timed: false },
   { kind: 'message', label: 'Messages', icon: '💬', empty: 'No messages to send.', timed: false, apps: true },
   { kind: 'meeting', label: 'Meetings', icon: '📅', empty: 'Nothing on the calendar.', timed: true },
