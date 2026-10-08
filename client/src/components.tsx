@@ -38,10 +38,66 @@ export function AppIcon({ app, size = 18 }: { app: MessageApp; size?: number }) 
 
 const evTime = (e: CalEvent) =>
   e.allDay ? 'All day' : new Date(e.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-const evWhen = (e: CalEvent) =>
-  e.allDay
-    ? `${new Date(e.start).toLocaleDateString([], { month: 'short', day: 'numeric' })} · All day`
-    : fmt(e.start)
+
+function ItemRow({ item: i, reload, timeOnly }: { item: Item; reload: () => void; timeOnly?: boolean }) {
+  const when = i.due_at && (timeOnly ? new Date(i.due_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : fmt(i.due_at))
+  return (
+    <li className={i.done ? 'done' : ''}>
+      <button className="circle" aria-label="Toggle" onClick={() => api.setItemDone(i.id, !i.done).then(reload)}>{i.done ? '✓' : ''}</button>
+      <span>{i.app && <AppIcon app={i.app} size={14} />} {i.title}{when && <small> · {when}</small>}</span>
+      <button className="ghost" aria-label="Delete" onClick={() => api.deleteItem(i.id).then(reload)}>✕</button>
+    </li>
+  )
+}
+
+const dayLabel = (d: Date | null) => {
+  if (!d) return 'No date'
+  const days = Math.round((new Date(d).setHours(0, 0, 0, 0) - new Date().setHours(0, 0, 0, 0)) / 86_400_000)
+  if (days === 0) return 'Today'
+  if (days === 1) return 'Tomorrow'
+  return d.toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' })
+}
+
+type MeetingRow = { key: string; when: Date | null; item?: Item; event?: CalEvent }
+
+// Meetings (yours + Outlook) grouped under Today / Tomorrow subheadings
+function MeetingGroups({ items, extra, reload }: { items: Item[]; extra: CalEvent[]; reload: () => void }) {
+  const rows: MeetingRow[] = [
+    ...items.map((item) => ({ key: `i${item.id}`, when: item.due_at ? new Date(item.due_at) : null, item })),
+    ...extra.map((event) => ({ key: event.id, when: new Date(event.start), event })),
+  ]
+  const groups = new Map<string, { sort: number; rows: MeetingRow[] }>()
+  for (const r of rows) {
+    const label = dayLabel(r.when)
+    const sort = r.when ? new Date(r.when).setHours(0, 0, 0, 0) : Infinity
+    if (!groups.has(label)) groups.set(label, { sort, rows: [] })
+    groups.get(label)!.rows.push(r)
+  }
+  const ordered = [...groups.entries()].sort((a, b) => a[1].sort - b[1].sort)
+
+  return (
+    <>
+      {ordered.map(([label, g]) => (
+        <div key={label} className="day-group">
+          <h5>{label}</h5>
+          <ul className="steps">
+            {g.rows
+              .sort((a, b) => Number(!!a.item?.done) - Number(!!b.item?.done) || (a.when?.getTime() ?? 0) - (b.when?.getTime() ?? 0))
+              .map((r) =>
+                r.item ? (
+                  <ItemRow key={r.key} item={r.item} reload={reload} timeOnly />
+                ) : (
+                  <li key={r.key}>
+                    <span><span className="outlook-tag">Outlook</span>{r.event!.title}<small> · {evTime(r.event!)}</small></span>
+                  </li>
+                ),
+              )}
+          </ul>
+        </div>
+      ))}
+    </>
+  )
+}
 
 function Widget({ cfg, items, reload, extra = [] }: { cfg: (typeof WIDGETS)[number]; items: Item[]; reload: () => void; extra?: CalEvent[] }) {
   const [adding, setAdding] = useState(false)
@@ -80,20 +136,13 @@ function Widget({ cfg, items, reload, extra = [] }: { cfg: (typeof WIDGETS)[numb
         </form>
       )}
       {items.length === 0 && extra.length === 0 && !adding && <p className="empty">{cfg.empty}</p>}
-      <ul className="steps">
-        {items.map((i) => (
-          <li key={i.id} className={i.done ? 'done' : ''}>
-            <button className="circle" aria-label="Toggle" onClick={() => api.setItemDone(i.id, !i.done).then(reload)}>{i.done ? '✓' : ''}</button>
-            <span>{i.app && <AppIcon app={i.app} size={14} />} {i.title}{i.due_at && <small> · {fmt(i.due_at)}</small>}</span>
-            <button className="ghost" aria-label="Delete" onClick={() => api.deleteItem(i.id).then(reload)}>✕</button>
-          </li>
-        ))}
-        {extra.map((e) => (
-          <li key={e.id}>
-            <span><span className="outlook-tag">Outlook</span>{e.title}<small> · {evWhen(e)}</small></span>
-          </li>
-        ))}
-      </ul>
+      {cfg.kind === 'meeting' ? (
+        <MeetingGroups items={items} extra={extra} reload={reload} />
+      ) : (
+        <ul className="steps">
+          {items.map((i) => <ItemRow key={i.id} item={i} reload={reload} />)}
+        </ul>
+      )}
     </section>
   )
 }

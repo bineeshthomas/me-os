@@ -169,3 +169,7 @@ p.card { margin: 0; }
 .app-btn.sel { border-color: var(--mint-dark); background: #eef7f1; font-weight: 600; }
 .steps li svg { flex-shrink: 0; vertical-align: -3px; }
 .widget .head .ghost:hover { color: var(--accent); }
+
+/* Meetings: Today / Tomorrow subheadings */
+.day-group h5 { margin: 10px 0 0; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--mint-dark); border-bottom: 1px solid var(--line); padding-bottom: 3px; }
+.day-group .steps { margin: 4px 0 0; }
