@@ -24,7 +24,7 @@ export default function Projects() {
     <>
       <section className="card head">
         <div>
-          <h2>Projects &amp; Step-by-Step Phases</h2>
+          <h2>Projects</h2>
           <p>Outline context notes and milestones. Click a step circle to mark it complete.</p>
         </div>
         <button className="primary" onClick={() => setAdding(!adding)}>+ New Project</button>

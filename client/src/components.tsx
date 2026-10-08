@@ -76,23 +76,26 @@ export function Weather() {
     let cancelled = false
     ;(async () => {
       try {
-        const geo = await (await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1`)).json()
-        const place = geo.results?.[0]
+        const [name, cc] = city.split(',').map((x) => x.trim())
+        const geo = await (await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=10`)).json()
+        const results: { latitude: number; longitude: number; country_code: string; name: string }[] = geo.results ?? []
+        const prefer = (cc || 'IN').toUpperCase()
+        const place = results.find((r) => r.country_code === prefer) ?? (cc ? undefined : results[0])
         if (!place) return !cancelled && setText('City not found')
         const w = await (await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${place.latitude}&longitude=${place.longitude}&current=temperature_2m,weather_code`)).json()
-        if (!cancelled) setText(`${icon(w.current.weather_code)} ${Math.round(w.current.temperature_2m)}°C`)
+        if (!cancelled) setText(`${icon(w.current.weather_code)} ${Math.round(w.current.temperature_2m)}°C ${place.name}, ${place.country_code}`)
       } catch { if (!cancelled) setText('Weather unavailable') }
     })()
     return () => { cancelled = true }
   }, [city])
 
   const change = () => {
-    const next = prompt('Weather city', city)?.trim()
+    const next = prompt('Weather city (add a country code to be exact, e.g. Paris, FR)', city)?.trim()
     if (!next) return
     setCity(next)
     try { localStorage.setItem('city', next) } catch { /* ignore */ }
   }
-  return <button className="pill" onClick={change} title="Change city">{text} {city}</button>
+  return <button className="pill" onClick={change} title="Change city">{text}</button>
 }
 
 const HIT_HREF: Record<string, string> = { project: '#projects', step: '#projects', note: '#notes' }
