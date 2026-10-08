@@ -221,3 +221,13 @@ p.card { margin: 0; }
 .stepedit { border-color: transparent; padding: 3px 6px; flex: 1; }
 .done .stepedit { text-decoration: line-through; color: var(--muted); }
 .pfoot { justify-content: flex-end; margin-top: 4px; }
+
+/* Widget add buttons: big enough to click easily */
+.widget .head .ghost {
+  width: 30px; height: 30px; padding: 0; flex-shrink: 0;
+  display: grid; place-items: center;
+  font-size: 20px; line-height: 1; color: var(--mint-dark);
+  background: #eef7f1; border-radius: 50%;
+}
+.widget .head .ghost:hover { background: var(--mint); color: var(--mint-dark); }
+.widget .head .ghost:active { transform: scale(.94); }
