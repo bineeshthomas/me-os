@@ -43,3 +43,7 @@ CREATE TABLE IF NOT EXISTS settings (
 ALTER TABLE items ADD COLUMN IF NOT EXISTS app TEXT CHECK (app IN ('whatsapp', 'teams'));
 ALTER TABLE items DROP CONSTRAINT IF EXISTS items_kind_check;
 ALTER TABLE items ADD CONSTRAINT items_kind_check CHECK (kind IN ('task', 'call', 'email', 'message', 'meeting', 'reminder'));
+
+-- Completed items drop off the cards after the day they were ticked
+ALTER TABLE items ADD COLUMN IF NOT EXISTS completed_at TIMESTAMPTZ;
+UPDATE items SET completed_at = now() WHERE done AND completed_at IS NULL;

@@ -98,6 +98,13 @@ function Widget({ cfg, items, reload, extra = [] }: { cfg: (typeof WIDGETS)[numb
   )
 }
 
+// Completed items stay (crossed out) until the end of the day they were ticked, then drop off the card
+const visible = (i: Item) => {
+  if (!i.done) return true
+  const startOfToday = new Date().setHours(0, 0, 0, 0)
+  return !!i.completed_at && new Date(i.completed_at).getTime() >= startOfToday
+}
+
 export function WidgetRail() {
   const [items, setItems] = useState<Item[]>([])
   const [outlook, setOutlook] = useState<CalEvent[]>([])
@@ -113,7 +120,7 @@ export function WidgetRail() {
   return (
     <aside className="rail">
       {WIDGETS.map((w) => (
-        <Widget key={w.kind} cfg={w} items={items.filter((i) => i.kind === w.kind)} reload={load}
+        <Widget key={w.kind} cfg={w} items={items.filter((i) => i.kind === w.kind && visible(i))} reload={load}
           extra={w.kind === 'meeting' ? outlook : undefined} />
       ))}
     </aside>

@@ -145,7 +145,10 @@ api.post("/items", async (req, res) => {
 api.patch("/items/:id", async (req, res) => {
   const { title, due_at, done } = req.body ?? {};
   const { rows } = await pool.query(
-    "UPDATE items SET title = COALESCE($2, title), due_at = COALESCE($3, due_at), done = COALESCE($4, done) WHERE id = $1 RETURNING *",
+    `UPDATE items SET title = COALESCE($2, title), due_at = COALESCE($3, due_at), done = COALESCE($4::boolean, done),
+       completed_at = CASE WHEN $4::boolean IS TRUE THEN COALESCE(completed_at, now())
+                           WHEN $4::boolean IS FALSE THEN NULL ELSE completed_at END
+     WHERE id = $1 RETURNING *`,
     [req.params.id, title ?? null, due_at ?? null, done ?? null],
   );
   if (!rows[0]) return res.status(404).json({ error: "not found" });
