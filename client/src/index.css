@@ -173,3 +173,14 @@ p.card { margin: 0; }
 /* Meetings: Today / Tomorrow subheadings */
 .day-group h5 { margin: 10px 0 0; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--mint-dark); border-bottom: 1px solid var(--line); padding-bottom: 3px; }
 .day-group .steps { margin: 4px 0 0; }
+
+/* Links */
+.linkform { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.linkform input { flex: 1 1 200px; width: auto; }
+.links { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+.linkcard { display: flex; flex-direction: column; gap: 6px; padding: 10px 14px; }
+.linkcard a { display: flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none; }
+.linkcard a span { display: flex; flex-direction: column; min-width: 0; }
+.linkcard a:hover b { color: var(--accent); }
+.linkcard small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.linkcard .actions { justify-content: flex-end; }

@@ -209,7 +209,7 @@ export function Weather() {
   return <button className="pill" onClick={change} title="Change city">{text}</button>
 }
 
-const HIT_HREF: Record<string, string> = { project: '#projects', step: '#projects', note: '#notes' }
+const HIT_HREF: Record<string, string> = { project: '#projects', step: '#projects', note: '#notes', link: '#links' }
 
 export function Search() {
   const [open, setOpen] = useState(false)

@@ -47,6 +47,7 @@ export default function Projects() {
             <h3>{p.title}</h3>
             <button className="ghost" onClick={() => confirm(`Delete "${p.title}"?`) && run(api.deleteProject(p.id))}>Delete</button>
           </div>
+          <small className="muted">Created {new Date(p.created_at).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' })}</small>
           {p.description && <p className="muted">{p.description}</p>}
           <ul className="steps">
             {p.steps.map((s) => (

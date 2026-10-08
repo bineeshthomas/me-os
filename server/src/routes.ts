@@ -173,6 +173,8 @@ api.get("/search", async (req, res) => {
      SELECT 'note', id, title, LEFT(body, 120) FROM notes WHERE title ILIKE $1 OR body ILIKE $1
      UNION ALL
      SELECT kind, id, title, NULL FROM items WHERE title ILIKE $1
+     UNION ALL
+     SELECT 'link', id, name, url FROM links WHERE name ILIKE $1 OR url ILIKE $1
      LIMIT 30`,
     [like],
   );
@@ -220,4 +222,48 @@ api.get("/calendar/events", async (req, res) => {
   } catch (e) {
     res.status(502).json({ connected: true, events: [], error: (e as Error).message });
   }
+});
+
+// Quick-launch links
+function cleanUrl(input: unknown): string | null {
+  const raw = String(input ?? "").trim();
+  if (!raw) return null;
+  try {
+    const url = new URL(/^[a-z][a-z0-9+.-]*:/i.test(raw) ? raw : `https://${raw}`);
+    return url.protocol === "http:" || url.protocol === "https:" ? url.toString() : null; // no javascript: etc.
+  } catch {
+    return null;
+  }
+}
+
+api.get("/links", async (_req, res) => {
+  const { rows } = await pool.query("SELECT * FROM links ORDER BY lower(name), id");
+  res.json(rows);
+});
+
+api.post("/links", async (req, res) => {
+  const name = String(req.body?.name ?? "").trim();
+  const url = cleanUrl(req.body?.url);
+  if (!name) return res.status(400).json({ error: "name is required" });
+  if (!url) return res.status(400).json({ error: "enter a valid http(s) link" });
+  const { rows } = await pool.query("INSERT INTO links (name, url) VALUES ($1, $2) RETURNING *", [name, url]);
+  res.status(201).json(rows[0]);
+});
+
+api.patch("/links/:id", async (req, res) => {
+  const name = req.body?.name == null ? null : String(req.body.name).trim();
+  const url = req.body?.url == null ? null : cleanUrl(req.body.url);
+  if (name === "" ) return res.status(400).json({ error: "name is required" });
+  if (req.body?.url != null && !url) return res.status(400).json({ error: "enter a valid http(s) link" });
+  const { rows } = await pool.query(
+    "UPDATE links SET name = COALESCE($2, name), url = COALESCE($3, url) WHERE id = $1 RETURNING *",
+    [req.params.id, name, url],
+  );
+  if (!rows[0]) return res.status(404).json({ error: "not found" });
+  res.json(rows[0]);
+});
+
+api.delete("/links/:id", async (req, res) => {
+  const { rowCount } = await pool.query("DELETE FROM links WHERE id = $1", [req.params.id]);
+  res.status(rowCount ? 204 : 404).end();
 });

@@ -47,3 +47,10 @@ ALTER TABLE items ADD CONSTRAINT items_kind_check CHECK (kind IN ('task', 'call'
 -- Completed items drop off the cards after the day they were ticked
 ALTER TABLE items ADD COLUMN IF NOT EXISTS completed_at TIMESTAMPTZ;
 UPDATE items SET completed_at = now() WHERE done AND completed_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS links (
+  id         SERIAL PRIMARY KEY,
+  name       TEXT NOT NULL,
+  url        TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);

@@ -4,9 +4,10 @@ export interface Note { id: number; title: string; body: string; created_at: str
 export type Kind = 'task' | 'call' | 'email' | 'message' | 'meeting' | 'reminder'
 export type MessageApp = 'whatsapp' | 'teams'
 export interface Item { id: number; kind: Kind; title: string; due_at: string | null; done: boolean; completed_at: string | null; app: MessageApp | null }
-export interface SearchHit { type: 'project' | 'step' | 'note' | Kind; id: number; title: string; snippet: string | null }
+export interface SearchHit { type: 'project' | 'step' | 'note' | 'link' | Kind; id: number; title: string; snippet: string | null }
 export interface CalEvent { id: string; title: string; start: string; end: string; allDay: boolean; location: string | null }
 export interface CalendarStatus { connected: boolean; host?: string }
+export interface QuickLink { id: number; name: string; url: string }
 export interface Dashboard {
   counts: { projects: number; notes: number; open_steps: number; done_steps: number }
   projects: Project[]
@@ -46,6 +47,10 @@ export const api = {
   removeCalendar: () => req<void>('DELETE', '/settings/calendar'),
   calendarEvents: (from: Date, to: Date) =>
     req<{ connected: boolean; events: CalEvent[] }>('GET', `/calendar/events?from=${from.toISOString()}&to=${to.toISOString()}`),
+  links: () => req<QuickLink[]>('GET', '/links'),
+  createLink: (name: string, url: string) => req<QuickLink>('POST', '/links', { name, url }),
+  updateLink: (id: number, name: string, url: string) => req<QuickLink>('PATCH', `/links/${id}`, { name, url }),
+  deleteLink: (id: number) => req<void>('DELETE', `/links/${id}`),
   notes: () => req<Note[]>('GET', '/notes'),
   createNote: (title: string, body: string) => req<Note>('POST', '/notes', { title, body }),
   updateNote: (id: number, title: string, body: string) => req<Note>('PATCH', `/notes/${id}`, { title, body }),
