@@ -213,12 +213,13 @@ review.get("/review-summary/:date", async (req, res) => {
   if (!isDate(end)) return res.status(400).json({ error: "date must be YYYY-MM-DD" });
   const start = shift(end, -6);
 
-  const [reviews, habits, logs, goals, entries] = await Promise.all([
+  const [reviews, habits, logs, goals, entries, finished] = await Promise.all([
     pool.query(`SELECT ${REVIEW_COLS} FROM daily_reviews WHERE completed_at IS NOT NULL AND date BETWEEN $1 AND $2`, [start, end]),
     pool.query("SELECT id, name, icon, points FROM habits ORDER BY id"),
     pool.query("SELECT habit_id, to_char(date, 'YYYY-MM-DD') AS date FROM habit_logs WHERE date BETWEEN $1 AND $2", [start, end]),
     pool.query("SELECT id, title FROM goals"),
     pool.query("SELECT goal_id, to_char(date, 'YYYY-MM-DD') AS date, points FROM goal_entries WHERE date BETWEEN $1 AND $2", [start, end]),
+    pool.query("SELECT to_char(date, 'YYYY-MM-DD') AS date FROM daily_reviews WHERE completed_at IS NOT NULL AND date <= $1", [end]),
   ]);
 
   const pointsOf = new Map(habits.rows.map((h) => [h.id, h.points as number]));
@@ -246,6 +247,7 @@ review.get("/review-summary/:date", async (req, res) => {
     end,
     days,
     reviews_done: reviews.rows.length,
+    review_streak: streak(finished.rows.map((r) => r.date), end),
     avg_rating: avg("rating"),
     avg_energy: avg("energy"),
     avg_stress: avg("stress"),

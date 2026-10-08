@@ -19,7 +19,7 @@ npm run dev:client   # UI on http://localhost:5173 (proxies /api to the API)
 Copy `server/.env.example` to `server/.env` if it doesn't exist.
 
 ## Features
-- **Dashboard** - counts, active project progress, recent notes
+- **Dashboard** - a 7-day daily-review band with your night streak, counts, active project progress, recent notes
 - **Projects** - compact cards, most recently created/updated first; click one to edit its title, description and steps
 - **Notes** - quick notes (create, edit, delete)
 - **Daily Review** - nightly page (every section collapses; the choice is remembered) (top 3 for tomorrow also show on the dashboard): one-tap check-ins with streaks (worked out, read...), wins, unfinished items (shown read-only; dated ones roll over to the next day when you finish the review), long-term goals advanced by tiny point steps, reflection, top 3 for tomorrow, brain dump, ratings, and a 7-day summary

@@ -21,7 +21,7 @@ export interface ReviewDay {
   open_items: OpenItem[]; points_today: number; review_streak: number
 }
 export interface WeekSummary {
-  start: string; end: string; reviews_done: number; avg_rating: number | null; avg_energy: number | null
+  start: string; end: string; reviews_done: number; review_streak: number; avg_rating: number | null; avg_energy: number | null
   avg_stress: number | null; points_total: number
   days: { date: string; reviewed: boolean; rating: number | null; habits_done: number; points: number }[]
   habits: { id: number; name: string; icon: string; count: number }[]

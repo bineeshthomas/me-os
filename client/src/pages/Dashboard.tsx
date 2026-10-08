@@ -1,5 +1,36 @@
 import { useEffect, useState } from 'react'
-import { api, type Dashboard as Data, type Focus } from '../api'
+import { api, type Dashboard as Data, type Focus, type WeekSummary } from '../api'
+
+const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+const MOODS = ['😞', '🙁', '😐', '🙂', '😄']
+const weekday = (date: string) => {
+  const [y, m, d] = date.split('-').map(Number)
+  return new Date(y, m - 1, d).toLocaleDateString([], { weekday: 'short' })
+}
+
+// The last 7 nights at a glance: a mood face where the review was finished, a dot where it wasn't
+function ReviewBand({ week, today }: { week: WeekSummary; today: string }) {
+  return (
+    <a href="#review" className="card band" aria-label="Daily review, last 7 days">
+      <div className="band-title">
+        <b>🌙 Daily review</b>
+        <span className="badge">🔥 {week.review_streak} night{week.review_streak === 1 ? '' : 's'}</span>
+      </div>
+      <div className="band-days">
+        {week.days.map((d) => {
+          const pending = d.date === today && !d.reviewed
+          return (
+            <div key={d.date} className={`bday${d.reviewed ? ' ok' : ''}${pending ? ' pending' : ''}${d.date === today ? ' today' : ''}`}
+              title={d.reviewed ? `${d.date}: reviewed` : pending ? 'Tonight' : `${d.date}: no review`}>
+              <small>{d.date === today ? 'Today' : weekday(d.date)}</small>
+              <span>{d.reviewed ? (d.rating ? MOODS[d.rating - 1] : '✓') : pending ? '🌙' : '·'}</span>
+            </div>
+          )
+        })}
+      </div>
+    </a>
+  )
+}
 
 const progress = (steps: { done: boolean }[]) =>
   steps.length ? Math.round((steps.filter((s) => s.done).length / steps.length) * 100) : 0
@@ -7,11 +38,14 @@ const progress = (steps: { done: boolean }[]) =>
 export default function Dashboard() {
   const [data, setData] = useState<Data | null>(null)
   const [focus, setFocus] = useState<Focus | null>(null)
+  const [week, setWeek] = useState<WeekSummary | null>(null)
+  const today = ymd(new Date())
   const [error, setError] = useState('')
 
   useEffect(() => {
     api.dashboard().then(setData).catch((e) => setError(e.message))
     api.focus().then(setFocus).catch(() => {})
+    api.weekSummary(ymd(new Date())).then(setWeek).catch(() => {})
   }, [])
 
   if (error) return <p className="error">{error}</p>
@@ -20,6 +54,8 @@ export default function Dashboard() {
 
   return (
     <>
+      {week && <ReviewBand week={week} today={today} />}
+
       <div className="stats">
         <div className="card stat"><b>{counts.projects}</b><span>Projects</span></div>
         <div className="card stat"><b>{counts.open_steps}</b><span>Open steps</span></div>
