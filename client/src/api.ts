@@ -19,7 +19,7 @@ export interface ReviewRow {
 export interface OpenItem { id: number; kind: Kind; title: string; due_at: string | null; app: MessageApp | null }
 export interface ReviewDay {
   date: string; review: ReviewRow | null; habits: Habit[]; goals: Goal[]; wins: string[]
-  open_items: OpenItem[]; points_today: number; review_streak: number
+  open_items: OpenItem[]; points_today: number; focus_seconds: number; review_streak: number
 }
 export interface WeekSummary {
   start: string; end: string; reviews_done: number; review_streak: number; avg_rating: number | null; avg_energy: number | null
@@ -33,6 +33,10 @@ export interface Deadline {
   type: 'project' | 'step'; id: number; project_id: number; title: string; project_title: string
   category: Category; due_date: string; done: boolean
 }
+export interface FocusRunning { id: number; activity: string; started_at: string }
+export interface FocusStatus { now: string; running: FocusRunning | null; today_seconds: number; today_sessions: number; week_seconds: number }
+export interface FocusSession { id: number; activity: string; started_at: string; ended_at: string | null; running: boolean; seconds: number }
+export interface FocusPage { items: FocusSession[]; total: number; page: number; pages: number; page_size: number }
 export interface Dashboard {
   counts: { projects: number; notes: number; open_steps: number; done_steps: number }
   projects: Project[]
@@ -96,6 +100,12 @@ export const api = {
   addGoalEntry: (id: number, date: string, points: number, note: string) =>
     req<{ achieved: boolean }>('POST', `/goals/${id}/entries`, { date, points, note }),
   deleteGoalEntry: (id: number) => req<void>('DELETE', `/goal-entries/${id}`),
+  focusStatus: () => req<FocusStatus>('GET', '/focus/status'),
+  focusStart: (activity: string) => req<FocusRunning>('POST', '/focus/start', { activity }),
+  focusStop: () => req<FocusSession>('POST', '/focus/stop'),
+  focusSessions: (page: number, pageSize = 10) => req<FocusPage>('GET', `/focus/sessions?page=${page}&page_size=${pageSize}`),
+  renameFocus: (id: number, activity: string) => req<void>('PATCH', `/focus/sessions/${id}`, { activity }),
+  deleteFocus: (id: number) => req<void>('DELETE', `/focus/sessions/${id}`),
   notes: () => req<Note[]>('GET', '/notes'),
   createNote: (title: string, body: string) => req<Note>('POST', '/notes', { title, body }),
   updateNote: (id: number, title: string, body: string) => req<Note>('PATCH', `/notes/${id}`, { title, body }),

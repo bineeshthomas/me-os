@@ -376,3 +376,43 @@ p.card { margin: 0; }
 
 .deadline-tag { font-size: 10px; background: #fde7d3; color: #9a4a00; padding: 1px 6px; border-radius: 6px; margin-right: 4px; white-space: nowrap; }
 .steps li .grip, .steps li .mv { flex: 0 0 auto; }
+
+/* Focus timer */
+.focus { display: flex; flex-direction: column; gap: 8px; }
+.focus-start { display: flex; gap: 8px; }
+.focus-start input { flex: 1; }
+.focus-run { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 0 2px; text-align: center; }
+.focus-activity { font-size: 16px; overflow-wrap: anywhere; }
+.focus-clock { font-size: 44px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: 1px; color: var(--mint-dark); line-height: 1.1; }
+.stopbtn { background: #c0392b; color: #fff; padding: 8px 26px; border-radius: 999px; font-weight: 600; font-size: 14px; margin: 4px 0; }
+.stopbtn:hover:not(:disabled) { background: #a93226; }
+.stopbtn:disabled, .focus .primary:disabled { opacity: .6; cursor: wait; }
+.focus-totals { text-align: center; }
+.focuscard { border-color: var(--mint); }
+.focus-pill { display: inline-flex; align-items: center; gap: 6px; text-decoration: none; background: #fdecea; border-color: #f3b9b3; color: #a61e14; font-weight: 600; font-variant-numeric: tabular-nums; max-width: 260px; }
+.focus-pill .dot { width: 8px; height: 8px; border-radius: 50%; background: #c0392b; animation: blink 1.4s infinite; }
+.fp-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; max-width: 140px; }
+@keyframes blink { 50% { opacity: .25; } }
+@media (prefers-reduced-motion: reduce) { .focus-pill .dot { animation: none; } }
+
+/* Activity log + pagination */
+.log { width: 100%; border-collapse: collapse; margin-top: 6px; font-size: 13px; }
+.log th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); padding: 4px 6px; border-bottom: 1px solid var(--line); }
+.log td { padding: 7px 6px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.log .num { text-align: right; white-space: nowrap; }
+.log tr.running td { background: #fff7f6; }
+.linklike { background: none; padding: 0; font: inherit; color: var(--ink); text-align: left; cursor: pointer; }
+.linklike:hover { color: var(--accent); text-decoration: underline; }
+.pager { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 12px; }
+.navbtn.cur { background: var(--mint-dark); color: #fff; }
+@media (max-width: 700px) {
+  .log thead { display: none; }
+  .log, .log tbody, .log tr, .log td { display: block; }
+  .log tr { padding: 8px 0; border-bottom: 1px solid var(--line); display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; }
+  .log td { border: 0; padding: 0; }
+  .log td:nth-child(2) { grid-column: 1; font-size: 12px; }
+  .log td.num { text-align: right; }
+  .focus-clock { font-size: 38px; }
+  .focus-pill { max-width: 150px; }
+  .fp-name { display: none; }
+}

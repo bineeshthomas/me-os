@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api, type Dashboard as Data, type Focus, type WeekSummary } from '../api'
+import { FocusTimer } from '../focus'
 
 const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 const MOODS = ['😞', '🙁', '😐', '🙂', '😄']
@@ -55,6 +56,11 @@ export default function Dashboard() {
   return (
     <>
       {week && <ReviewBand week={week} today={today} />}
+
+      <section className="card focuscard">
+        <h2>⏱️ Focus time <a href="#activity" className="more">Activity log</a></h2>
+        <FocusTimer />
+      </section>
 
       <div className="stats">
         <div className="card stat"><b>{counts.projects}</b><span>Projects</span></div>

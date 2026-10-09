@@ -123,3 +123,14 @@ ALTER TABLE projects ADD COLUMN IF NOT EXISTS category TEXT NOT NULL DEFAULT 'wo
 -- Deadlines on projects and steps (shown on the calendar)
 ALTER TABLE projects ADD COLUMN IF NOT EXISTS due_date DATE;
 ALTER TABLE project_steps ADD COLUMN IF NOT EXISTS due_date DATE;
+
+-- Focus time logger: a session runs from start until stop (ended_at is null while running)
+CREATE TABLE IF NOT EXISTS focus_sessions (
+  id         SERIAL PRIMARY KEY,
+  activity   TEXT NOT NULL,
+  started_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  ended_at   TIMESTAMPTZ
+);
+-- Only one session can run at a time
+CREATE UNIQUE INDEX IF NOT EXISTS focus_one_running ON focus_sessions ((true)) WHERE ended_at IS NULL;
+CREATE INDEX IF NOT EXISTS focus_started_idx ON focus_sessions (started_at DESC);

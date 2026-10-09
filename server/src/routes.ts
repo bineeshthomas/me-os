@@ -349,3 +349,6 @@ api.delete("/links/:id", async (req, res) => {
 
 import { review } from "./review.js";
 api.use(review);
+
+import { focus } from "./focus.js";
+api.use(focus);

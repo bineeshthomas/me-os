@@ -25,7 +25,7 @@ review.get("/review/:date", async (req, res) => {
   const date = req.params.date;
   if (!isDate(date)) return res.status(400).json({ error: "date must be YYYY-MM-DD" });
 
-  const [rv, habits, logs, goals, entries, wins, open, done] = await Promise.all([
+  const [rv, habits, logs, goals, entries, wins, open, done, focusRow] = await Promise.all([
     pool.query(`SELECT ${REVIEW_COLS} FROM daily_reviews WHERE date = $1`, [date]),
     pool.query("SELECT id, name, icon, points FROM habits ORDER BY id"),
     pool.query("SELECT habit_id, to_char(date, 'YYYY-MM-DD') AS date FROM habit_logs WHERE date <= $1", [date]),
@@ -36,6 +36,11 @@ review.get("/review/:date", async (req, res) => {
     pool.query(`SELECT id, kind, title, due_at, app FROM items
                 WHERE NOT done AND kind <> 'meeting' ORDER BY due_at NULLS LAST, id`),
     pool.query("SELECT to_char(date, 'YYYY-MM-DD') AS date FROM daily_reviews WHERE completed_at IS NOT NULL AND date <= $1", [date]),
+    pool.query(
+      `SELECT COALESCE(SUM(EXTRACT(EPOCH FROM (COALESCE(ended_at, now()) - started_at))), 0)::int AS seconds
+       FROM focus_sessions WHERE started_at::date = $1::date`,
+      [date],
+    ),
   ]);
 
   const habitList = habits.rows.map((h) => {
@@ -54,6 +59,7 @@ review.get("/review/:date", async (req, res) => {
     wins: wins.rows.map((r) => r.title),
     open_items: open.rows,
     points_today: points,
+    focus_seconds: focusRow.rows[0].seconds,
     review_streak: streak(done.rows.map((r) => r.date), date),
   });
 });

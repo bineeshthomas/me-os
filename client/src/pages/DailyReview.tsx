@@ -130,6 +130,7 @@ export default function DailyReview() {
         <div className="badges">
           <span className="badge">🔥 {day.review_streak} night streak</span>
           <span className="badge">⭐ {day.points_today} pts today</span>
+          {day.focus_seconds > 0 && <span className="badge">⏱️ {Math.floor(day.focus_seconds / 3600) > 0 ? `${Math.floor(day.focus_seconds / 3600)}h ` : ''}{Math.floor((day.focus_seconds % 3600) / 60)}m focused</span>}
           <button className="navbtn" onClick={() => setAll(true)}>Collapse all</button>
           <button className="navbtn" onClick={() => setAll(false)}>Expand all</button>
         </div>

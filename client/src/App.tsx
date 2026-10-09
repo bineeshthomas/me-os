@@ -2,16 +2,19 @@ import { useEffect, useState } from 'react'
 import Dashboard from './pages/Dashboard'
 import Projects from './pages/Projects'
 import Notes from './pages/Notes'
+import Activity from './pages/Activity'
 import DailyReview from './pages/DailyReview'
 import Links from './pages/Links'
 import Settings from './pages/Settings'
 import { Calendar, Footer, Search, Weather, WidgetRail } from './components'
+import { FocusPill } from './focus'
 
 const PAGES = {
   home: { label: 'Home', icon: '🏠', title: 'Dashboard ⚓', subtitle: 'Personal Control Surface', view: Dashboard },
   projects: { label: 'Projects', icon: '📋', title: 'Projects 📋', subtitle: 'Structured Goals & Milestones', view: Projects },
   notes: { label: 'Notes', icon: '📝', title: 'Notes 📝', subtitle: 'Instant Context & Ideas', view: Notes },
   review: { label: 'Daily Review', icon: '🌙', title: 'Daily Review 🌙', subtitle: 'Close the day, plan tomorrow', view: DailyReview },
+  activity: { label: 'Activity', icon: '⏱️', title: 'Activity ⏱️', subtitle: 'Focus time log', view: Activity },
   links: { label: 'Links', icon: '🔗', title: 'Links 🔗', subtitle: 'Quick Launch', view: Links },
   settings: { label: 'Settings', icon: '⚙️', title: 'Settings ⚙️', subtitle: 'Connections & Preferences', view: Settings },
 } as const
@@ -69,6 +72,7 @@ export default function App() {
           <div><h1>{title}</h1><small>{subtitle}</small></div>
           <Search />
           <div className="actions">
+            <FocusPill />
             <Weather />
             <button className="pill clock" onClick={() => setCalOpen(true)} title="Open calendar">
               {time.toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' })} · {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
