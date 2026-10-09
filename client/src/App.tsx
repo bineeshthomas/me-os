@@ -109,7 +109,7 @@ export default function App() {
           </div>
         </header>
         {calOpen && <Calendar onClose={() => setCalOpen(false)} />}
-        <div className="body"><main><View key={`${route.key}:${route.arg ?? ''}`} arg={route.arg} /></main><WidgetRail /></div>
+        <div className="body"><WidgetRail /><main><View key={`${route.key}:${route.arg ?? ''}`} arg={route.arg} /></main></div>
         <Footer page={page} />
       </div>
     </div>

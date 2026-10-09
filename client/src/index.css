@@ -523,3 +523,10 @@ a.navbtn { display: inline-flex; align-items: center; text-decoration: none; }
   .app.collapsed nav a { justify-content: center; padding: 10px 0; }
   .app.collapsed nav a .ico { font-size: 18px; }
 }
+
+/* Tasks / reminders column sits right after the left menu (the primary work area) */
+.rail { border-left: 0; border-right: 1px solid var(--line); }
+@media (max-width: 1000px) {
+  /* Stacked layout: page content first, the column below it */
+  .rail { order: 2; border-right: 0; border-top: 1px solid var(--line); }
+}
