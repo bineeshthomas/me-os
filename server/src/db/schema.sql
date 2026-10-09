@@ -134,3 +134,7 @@ CREATE TABLE IF NOT EXISTS focus_sessions (
 -- Only one session can run at a time
 CREATE UNIQUE INDEX IF NOT EXISTS focus_one_running ON focus_sessions ((true)) WHERE ended_at IS NULL;
 CREATE INDEX IF NOT EXISTS focus_started_idx ON focus_sessions (started_at DESC);
+
+-- Notes: tags and pin-to-top
+ALTER TABLE notes ADD COLUMN IF NOT EXISTS pinned BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE notes ADD COLUMN IF NOT EXISTS tags TEXT[] NOT NULL DEFAULT '{}';

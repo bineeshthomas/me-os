@@ -139,23 +139,46 @@ api.delete("/steps/:id", async (req, res) => {
 });
 
 // Notes
+// Tags: lowercase, no leading #, spaces become dashes, de-duplicated, at most 10 of 24 characters each
+function cleanTags(input: unknown): string[] | undefined {
+  if (!Array.isArray(input)) return undefined;
+  const tags = input
+    .map((t) => String(t).trim().replace(/^#+/, "").toLowerCase().replace(/\s+/g, "-").slice(0, 24))
+    .filter(Boolean);
+  return [...new Set(tags)].slice(0, 10);
+}
+
 api.get("/notes", async (_req, res) => {
-  const { rows } = await pool.query("SELECT * FROM notes ORDER BY updated_at DESC");
+  const { rows } = await pool.query("SELECT * FROM notes ORDER BY pinned DESC, updated_at DESC");
   res.json(rows);
 });
 
 api.post("/notes", async (req, res) => {
   const { title, body } = req.body ?? {};
   if (!title) return res.status(400).json({ error: "title is required" });
-  const { rows } = await pool.query("INSERT INTO notes (title, body) VALUES ($1, $2) RETURNING *", [title, body ?? ""]);
+  const { rows } = await pool.query(
+    "INSERT INTO notes (title, body, tags, pinned) VALUES ($1, $2, $3, $4) RETURNING *",
+    [title, body ?? "", cleanTags(req.body?.tags) ?? [], req.body?.pinned === true],
+  );
   res.status(201).json(rows[0]);
 });
 
+// `touch: false` saves without bumping "updated" (pinning, or ticking a checklist item, shouldn't reshuffle the list)
 api.patch("/notes/:id", async (req, res) => {
   const { title, body } = req.body ?? {};
+  if (title !== undefined && !String(title).trim()) return res.status(400).json({ error: "title is required" });
   const { rows } = await pool.query(
-    "UPDATE notes SET title = COALESCE($2, title), body = COALESCE($3, body), updated_at = now() WHERE id = $1 RETURNING *",
-    [req.params.id, title ?? null, body ?? null],
+    `UPDATE notes SET title = COALESCE($2, title), body = COALESCE($3, body), tags = COALESCE($4, tags),
+       pinned = COALESCE($5, pinned), updated_at = CASE WHEN $6::boolean THEN now() ELSE updated_at END
+     WHERE id = $1 RETURNING *`,
+    [
+      req.params.id,
+      title ?? null,
+      body ?? null,
+      cleanTags(req.body?.tags) ?? null,
+      typeof req.body?.pinned === "boolean" ? req.body.pinned : null,
+      req.body?.touch !== false,
+    ],
   );
   if (!rows[0]) return res.status(404).json({ error: "not found" });
   res.json(rows[0]);
@@ -235,7 +258,7 @@ api.get("/search", async (req, res) => {
      UNION ALL
      SELECT 'step', project_id, title, NULL FROM project_steps WHERE title ILIKE $1
      UNION ALL
-     SELECT 'note', id, title, LEFT(body, 120) FROM notes WHERE title ILIKE $1 OR body ILIKE $1
+     SELECT 'note', id, title, LEFT(body, 120) FROM notes WHERE title ILIKE $1 OR body ILIKE $1 OR array_to_string(tags, ' ') ILIKE $1
      UNION ALL
      SELECT kind, id, title, NULL FROM items WHERE title ILIKE $1
      UNION ALL
