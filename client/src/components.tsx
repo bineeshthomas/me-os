@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { api, type CalEvent, type Item, type Kind, type MessageApp, type SearchHit } from './api'
+import { api, type CalEvent, type Deadline, type Item, type Kind, type MessageApp, type SearchHit } from './api'
 
 const WIDGETS: { kind: Kind; label: string; icon: string; empty: string; timed: boolean; apps?: boolean }[] = [
   { kind: 'task', label: 'Focus Tasks', icon: '✅', empty: 'Nothing pressing.', timed: false },
@@ -261,6 +261,7 @@ export function Search() {
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const sameDay = (a: Date, b: Date) => a.toDateString() === b.toDateString()
+const toYmd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 
 export function Calendar({ onClose }: { onClose: () => void }) {
   const today = new Date()
@@ -268,12 +269,15 @@ export function Calendar({ onClose }: { onClose: () => void }) {
   const [selected, setSelected] = useState(today)
   const [items, setItems] = useState<Item[]>([])
   const [events, setEvents] = useState<CalEvent[]>([])
+  const [deadlines, setDeadlines] = useState<Deadline[]>([])
 
   useEffect(() => { api.items().then(setItems).catch(() => {}) }, [])
   useEffect(() => {
     const start = new Date(month.getFullYear(), month.getMonth(), 1 - new Date(month.getFullYear(), month.getMonth(), 1).getDay())
     const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 42)
     api.calendarEvents(start, end).then((r) => setEvents(r.events)).catch(() => setEvents([]))
+    const last = new Date(end.getFullYear(), end.getMonth(), end.getDate() - 1)
+    api.deadlines(toYmd(start), toYmd(last)).then(setDeadlines).catch(() => setDeadlines([]))
   }, [month])
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
@@ -283,6 +287,7 @@ export function Calendar({ onClose }: { onClose: () => void }) {
 
   const dated = items.filter((i) => i.due_at)
   const forDay = (d: Date) => dated.filter((i) => sameDay(new Date(i.due_at!), d))
+  const deadlinesOn = (d: Date) => deadlines.filter((x) => x.due_date === toYmd(d))
   const dayStart = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate())
   const eventsOn = (d: Date) => {
     const a = dayStart(d)
@@ -295,6 +300,7 @@ export function Calendar({ onClose }: { onClose: () => void }) {
   const shift = (n: number) => setMonth(new Date(month.getFullYear(), month.getMonth() + n, 1))
   const dayItems = forDay(selected)
   const dayEvents = eventsOn(selected)
+  const dayDeadlines = deadlinesOn(selected)
   const icons: Record<string, string> = { task: '✅', call: '📞', email: '✉️', message: '💬', meeting: '📅', reminder: '🔔' }
 
   return (
@@ -312,7 +318,7 @@ export function Calendar({ onClose }: { onClose: () => void }) {
         <div className="cal-grid">
           {DAYS.map((d) => <b key={d} className="cal-dow">{d}</b>)}
           {cells.slice(0, rows * 7).map((d) => {
-            const n = forDay(d).length + eventsOn(d).length
+            const n = forDay(d).length + eventsOn(d).length + deadlinesOn(d).filter((x) => !x.done).length
             const cls = ['cal-day', d.getMonth() !== month.getMonth() && 'other', sameDay(d, today) && 'today', sameDay(d, selected) && 'sel'].filter(Boolean).join(' ')
             return (
               <button key={d.toISOString()} className={cls} onClick={() => setSelected(d)}>
@@ -323,11 +329,20 @@ export function Calendar({ onClose }: { onClose: () => void }) {
           })}
         </div>
         <h3 className="cal-sel">{selected.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' })}</h3>
-        {dayItems.length === 0 && dayEvents.length === 0 && <p className="empty">Nothing scheduled.</p>}
+        {dayItems.length === 0 && dayEvents.length === 0 && dayDeadlines.length === 0 && <p className="empty">Nothing scheduled.</p>}
         <ul className="steps">
           {dayItems.map((i) => (
             <li key={i.id} className={i.done ? 'done' : ''}>
               <span>{icons[i.kind]} {i.title} <small>· {new Date(i.due_at!).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</small></span>
+            </li>
+          ))}
+          {dayDeadlines.map((d) => (
+            <li key={`${d.type}-${d.id}`} className={d.done ? 'done' : ''}>
+              <span>
+                <span className="deadline-tag">{d.type === 'project' ? '🎯 Project due' : '📌 Step due'}</span>
+                {d.title}{d.type === 'step' && <small> · {d.project_title}</small>}
+                {d.category === 'personal' && <small> · 🏠</small>}
+              </span>
             </li>
           ))}
           {dayEvents.map((e) => (

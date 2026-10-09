@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { pool } from "./db/pool.js";
+import { rollOverThrough } from "./rollover.js";
 
 export const review = Router();
 
@@ -94,12 +95,7 @@ review.put("/review/:date", async (req, res) => {
   // Undated items aren't tied to a day, so they simply stay open. Meetings are events and never move.
   let rolled = 0;
   if (b.complete === true) {
-    const r = await pool.query(
-      `UPDATE items SET due_at = due_at + ((($1::date + 1) - due_at::date) * interval '1 day')
-       WHERE NOT done AND kind <> 'meeting' AND due_at IS NOT NULL AND due_at::date <= $1::date`,
-      [date],
-    );
-    rolled = r.rowCount ?? 0;
+    rolled = await rollOverThrough(date);
   }
   res.json({ ...rows[0], rolled_over: rolled });
 });

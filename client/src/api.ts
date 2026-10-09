@@ -1,6 +1,6 @@
-export interface Step { id: number; title: string; done: boolean; position: number }
+export interface Step { id: number; title: string; done: boolean; position: number; due_date: string | null }
 export type Category = 'work' | 'personal'
-export interface Project { id: number; title: string; description: string | null; category: Category; created_at: string; updated_at: string; steps: Step[] }
+export interface Project { id: number; title: string; description: string | null; category: Category; due_date: string | null; created_at: string; updated_at: string; steps: Step[] }
 export interface Note { id: number; title: string; body: string; created_at: string; updated_at: string }
 export type Kind = 'task' | 'call' | 'email' | 'message' | 'meeting' | 'reminder'
 export type MessageApp = 'whatsapp' | 'teams'
@@ -29,6 +29,10 @@ export interface WeekSummary {
   goals: { id: number; title: string; points: number }[]
 }
 export interface Focus { priorities: string[] }
+export interface Deadline {
+  type: 'project' | 'step'; id: number; project_id: number; title: string; project_title: string
+  category: Category; due_date: string; done: boolean
+}
 export interface Dashboard {
   counts: { projects: number; notes: number; open_steps: number; done_steps: number }
   projects: Project[]
@@ -51,13 +55,16 @@ async function req<T>(method: string, path: string, body?: unknown): Promise<T> 
 export const api = {
   dashboard: () => req<Dashboard>('GET', '/dashboard'),
   projects: () => req<Project[]>('GET', '/projects'),
-  createProject: (title: string, description: string, steps: string[], category: Category) =>
-    req<Project>('POST', '/projects', { title, description, steps, category }),
+  createProject: (title: string, description: string, steps: string[], category: Category, due_date: string | null) =>
+    req<Project>('POST', '/projects', { title, description, steps, category, due_date }),
   deleteProject: (id: number) => req<void>('DELETE', `/projects/${id}`),
   addStep: (projectId: number, title: string) => req<Step>('POST', `/projects/${projectId}/steps`, { title }),
-  updateProject: (id: number, patch: { title?: string; description?: string; category?: Category }) =>
+  updateProject: (id: number, patch: { title?: string; description?: string; category?: Category; due_date?: string | null }) =>
     req<Project>('PATCH', `/projects/${id}`, patch),
   renameStep: (id: number, title: string) => req<Step>('PATCH', `/steps/${id}`, { title }),
+  setStepDue: (id: number, due_date: string | null) => req<Step>('PATCH', `/steps/${id}`, { due_date }),
+  reorderSteps: (projectId: number, ids: number[]) => req<void>('PUT', `/projects/${projectId}/steps/order`, { ids }),
+  deadlines: (from: string, to: string) => req<Deadline[]>('GET', `/deadlines?from=${from}&to=${to}`),
   setStepDone: (id: number, done: boolean) => req<Step>('PATCH', `/steps/${id}`, { done }),
   deleteStep: (id: number) => req<void>('DELETE', `/steps/${id}`),
   items: () => req<Item[]>('GET', '/items'),

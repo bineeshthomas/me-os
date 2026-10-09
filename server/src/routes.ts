@@ -5,11 +5,18 @@ export const api = Router();
 
 const PROJECTS_SQL = `
   SELECT p.*, COALESCE(
-    json_agg(json_build_object('id', s.id, 'title', s.title, 'done', s.done, 'position', s.position)
+    json_agg(json_build_object('id', s.id, 'title', s.title, 'done', s.done, 'position', s.position, 'due_date', to_char(s.due_date, 'YYYY-MM-DD'))
              ORDER BY s.position, s.id) FILTER (WHERE s.id IS NOT NULL), '[]') AS steps
   FROM projects p LEFT JOIN project_steps s ON s.project_id = p.id`;
 
 const CATEGORIES = ["work", "personal"];
+
+// "YYYY-MM-DD" -> itself, "" or null -> null (clears the date), anything else -> undefined (invalid)
+function dateOrNull(v: unknown): string | null | undefined {
+  if (v === null || v === "") return null;
+  if (typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(Date.parse(v))) return v;
+  return undefined;
+}
 
 // Projects
 api.get("/projects", async (_req, res) => {
@@ -21,9 +28,11 @@ api.post("/projects", async (req, res) => {
   const { title, description, steps, category } = req.body ?? {};
   if (!title) return res.status(400).json({ error: "title is required" });
   if (category != null && !CATEGORIES.includes(category)) return res.status(400).json({ error: "category must be work or personal" });
+  const due = dateOrNull(req.body?.due_date ?? null);
+  if (due === undefined) return res.status(400).json({ error: "due_date must be YYYY-MM-DD" });
   const { rows } = await pool.query(
-    "INSERT INTO projects (title, description, category) VALUES ($1, $2, $3) RETURNING id",
-    [title, description ?? null, category ?? "work"],
+    "INSERT INTO projects (title, description, category, due_date) VALUES ($1, $2, $3, $4) RETURNING id",
+    [title, description ?? null, category ?? "work", due],
   );
   const list: string[] = Array.isArray(steps) ? steps.filter((s) => typeof s === "string" && s.trim()) : [];
   for (const [i, s] of list.entries()) {
@@ -36,10 +45,14 @@ api.post("/projects", async (req, res) => {
 api.patch("/projects/:id", async (req, res) => {
   const { title, description, category } = req.body ?? {};
   if (category != null && !CATEGORIES.includes(category)) return res.status(400).json({ error: "category must be work or personal" });
+  const hasDue = "due_date" in (req.body ?? {});
+  const due = dateOrNull(req.body?.due_date);
+  if (hasDue && due === undefined) return res.status(400).json({ error: "due_date must be YYYY-MM-DD" });
   const { rows } = await pool.query(
     `UPDATE projects SET title = COALESCE($2, title), description = COALESCE($3, description),
-       category = COALESCE($4, category), updated_at = now() WHERE id = $1 RETURNING id`,
-    [req.params.id, title ?? null, description ?? null, category ?? null],
+       category = COALESCE($4, category), due_date = CASE WHEN $5::boolean THEN $6::date ELSE due_date END,
+       updated_at = now() WHERE id = $1 RETURNING id`,
+    [req.params.id, title ?? null, description ?? null, category ?? null, hasDue, due ?? null],
   );
   if (!rows[0]) return res.status(404).json({ error: "not found" });
   const out = await pool.query(`${PROJECTS_SQL} WHERE p.id = $1 GROUP BY p.id`, [req.params.id]);
@@ -55,10 +68,12 @@ api.delete("/projects/:id", async (req, res) => {
 api.post("/projects/:id/steps", async (req, res) => {
   const { title } = req.body ?? {};
   if (!title) return res.status(400).json({ error: "title is required" });
+  const due = dateOrNull(req.body?.due_date ?? null);
+  if (due === undefined) return res.status(400).json({ error: "due_date must be YYYY-MM-DD" });
   const { rows } = await pool.query(
-    `INSERT INTO project_steps (project_id, title, position)
-     VALUES ($1, $2, COALESCE((SELECT MAX(position) + 1 FROM project_steps WHERE project_id = $1), 0)) RETURNING *`,
-    [req.params.id, title],
+    `INSERT INTO project_steps (project_id, title, position, due_date)
+     VALUES ($1, $2, COALESCE((SELECT MAX(position) + 1 FROM project_steps WHERE project_id = $1), 0), $3) RETURNING *`,
+    [req.params.id, title, due],
   );
   await pool.query("UPDATE projects SET updated_at = now() WHERE id = $1", [req.params.id]);
   res.status(201).json(rows[0]);
@@ -66,13 +81,55 @@ api.post("/projects/:id/steps", async (req, res) => {
 
 api.patch("/steps/:id", async (req, res) => {
   const { title, done } = req.body ?? {};
+  const hasDue = "due_date" in (req.body ?? {});
+  const due = dateOrNull(req.body?.due_date);
+  if (hasDue && due === undefined) return res.status(400).json({ error: "due_date must be YYYY-MM-DD" });
   const { rows } = await pool.query(
-    "UPDATE project_steps SET title = COALESCE($2, title), done = COALESCE($3, done) WHERE id = $1 RETURNING *",
-    [req.params.id, title ?? null, done ?? null],
+    `UPDATE project_steps SET title = COALESCE($2, title), done = COALESCE($3, done),
+       due_date = CASE WHEN $4::boolean THEN $5::date ELSE due_date END
+     WHERE id = $1 RETURNING *`,
+    [req.params.id, title ?? null, done ?? null, hasDue, due ?? null],
   );
   if (!rows[0]) return res.status(404).json({ error: "not found" });
   await pool.query("UPDATE projects SET updated_at = now() WHERE id = $1", [rows[0].project_id]);
   res.json(rows[0]);
+});
+
+// Drag-to-reorder: the full list of this project's step ids, in the new order
+api.put("/projects/:id/steps/order", async (req, res) => {
+  const ids: unknown = req.body?.ids;
+  if (!Array.isArray(ids) || !ids.every((n) => Number.isInteger(n))) return res.status(400).json({ error: "ids must be an array of step ids" });
+  const owned = await pool.query("SELECT id FROM project_steps WHERE project_id = $1", [req.params.id]);
+  const have = new Set(owned.rows.map((r) => r.id as number));
+  if (ids.length !== have.size || !ids.every((n) => have.has(n as number)) || new Set(ids).size !== ids.length) {
+    return res.status(400).json({ error: "ids must list every step of this project exactly once" });
+  }
+  await pool.query(
+    `UPDATE project_steps s SET position = t.ord - 1
+     FROM unnest($2::int[]) WITH ORDINALITY AS t(id, ord) WHERE s.id = t.id AND s.project_id = $1`,
+    [req.params.id, ids],
+  );
+  await pool.query("UPDATE projects SET updated_at = now() WHERE id = $1", [req.params.id]);
+  res.status(204).end();
+});
+
+// Project and step deadlines inside a date range (calendar)
+api.get("/deadlines", async (req, res) => {
+  const from = dateOrNull(req.query.from);
+  const to = dateOrNull(req.query.to);
+  if (!from || !to) return res.status(400).json({ error: "from and to are required (YYYY-MM-DD)" });
+  const { rows } = await pool.query(
+    `SELECT 'project' AS type, p.id, p.id AS project_id, p.title, p.title AS project_title, p.category,
+            to_char(p.due_date, 'YYYY-MM-DD') AS due_date,
+            COALESCE((SELECT bool_and(s.done) FROM project_steps s WHERE s.project_id = p.id), false) AS done
+       FROM projects p WHERE p.due_date BETWEEN $1 AND $2
+     UNION ALL
+     SELECT 'step', s.id, s.project_id, s.title, p.title, p.category, to_char(s.due_date, 'YYYY-MM-DD'), s.done
+       FROM project_steps s JOIN projects p ON p.id = s.project_id WHERE s.due_date BETWEEN $1 AND $2
+     ORDER BY due_date, type DESC, id`,
+    [from, to],
+  );
+  res.json(rows);
 });
 
 api.delete("/steps/:id", async (req, res) => {

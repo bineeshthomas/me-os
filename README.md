@@ -20,7 +20,7 @@ Copy `server/.env.example` to `server/.env` if it doesn't exist.
 
 ## Features
 - **Dashboard** - a 7-day daily-review band with your night streak, counts, active project progress, recent notes
-- **Projects** - compact cards, most recently created/updated first; each is Work (default) or Personal (pink badge); click one to edit its title, description, type and steps
+- **Projects** - compact cards, most recently created/updated first; each is Work (default) or Personal (pink badge); click one to edit its title, description, type, due date and steps (drag the ⋮⋮ handle, or use the arrow keys, to reorder steps; each step can have a due date)
 - **Notes** - quick notes (create, edit, delete)
 - **Daily Review** - nightly page (every section collapses; the choice is remembered) (top 3 for tomorrow also show on the dashboard): one-tap check-ins with streaks (worked out, read...), wins, unfinished items (shown read-only; dated ones roll over to the next day when you finish the review), long-term goals advanced by tiny point steps, reflection, top 3 for tomorrow, brain dump, ratings, and a 7-day summary
 - **Links** - save quick-launch links with a name; they open in a new tab (http/https only)
@@ -29,7 +29,8 @@ Copy `server/.env.example` to `server/.env` if it doesn't exist.
 - **Footer** - a rotating quote and a 🌿-to-⚡ stress meter (0-100, saved in the database)
 - **Search** - Ctrl/Cmd+K searches projects, steps, notes and widget items
 - **Settings** - connect an Outlook calendar by pasting its published ICS link (stored server-side, never sent back to the browser)
-- **Calendar** - click the date/time in the header for a month view with items due each day
+- **Calendar** - click the date/time in the header for a month view with items due each day, Outlook meetings, and project/step deadlines
+- **Overnight rollover** - unfinished dated reminders move to the next day automatically (at startup and every 10 minutes, so it catches up after the laptop was asleep)
 - **Header** - weather (Open-Meteo, click to change city; default New Delhi) plus date and time
 
 ## Progressive web app
@@ -37,7 +38,7 @@ The client is an installable PWA (manifest, icons, service worker). Build it wit
 
 ## API
 - `GET /api/dashboard`
-- `GET|POST /api/projects`, `PATCH|DELETE /api/projects/:id`
+- `GET|POST /api/projects`, `PATCH|DELETE /api/projects/:id`, `PUT /api/projects/:id/steps/order`, `GET /api/deadlines?from=&to=`
 - `POST /api/projects/:id/steps`, `PATCH|DELETE /api/steps/:id`
 - `GET|POST /api/items`, `PATCH|DELETE /api/items/:id`
 - `GET /api/settings`, `PUT /api/settings/calendar`, `PUT /api/settings/stress`

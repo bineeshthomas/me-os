@@ -119,3 +119,7 @@ INSERT INTO settings (key, value) VALUES ('habits_seeded', '1') ON CONFLICT (key
 
 -- Projects are either work (default) or personal
 ALTER TABLE projects ADD COLUMN IF NOT EXISTS category TEXT NOT NULL DEFAULT 'work' CHECK (category IN ('work', 'personal'));
+
+-- Deadlines on projects and steps (shown on the calendar)
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS due_date DATE;
+ALTER TABLE project_steps ADD COLUMN IF NOT EXISTS due_date DATE;

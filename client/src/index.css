@@ -351,3 +351,28 @@ p.card { margin: 0; }
 .pcard.personal { border-left: 4px solid #d98cb3; background: linear-gradient(90deg, #fdf3f8, #fff 40%); }
 .ptag { align-self: flex-start; font-size: 10px; font-weight: 600; background: #fbe3ef; color: #a1366f; border-radius: 999px; padding: 1px 8px; }
 .row .ptag { background: none; padding: 0 4px 0 0; font-size: 12px; }
+
+/* Project deadlines + drag-to-reorder steps */
+.pmetaRow { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.datein { width: auto; padding: 4px 8px; font-size: 12px; }
+.datein.late { color: #b3261e; border-color: #f0b8b4; }
+.datein.soon { color: #9a5b00; border-color: #f0d49a; }
+.datein.ok { color: var(--mint-dark); }
+.stepdate { width: 128px; flex: 0 0 128px; }
+.stepdate.empty { opacity: .45; }
+.stepdate.empty:hover, .stepdate:focus { opacity: 1; }
+.due { align-self: flex-start; font-size: 11px; font-weight: 600; border-radius: 999px; padding: 1px 8px; background: #eef2f7; color: #44546a; }
+.due.soon { background: #fdf0d2; color: #8a5a00; }
+.due.late { background: #fbdcd9; color: #a61e14; }
+.due.ok { background: #e3f4ea; color: var(--mint-dark); }
+.grip { cursor: grab; color: var(--muted); font-size: 14px; letter-spacing: -2px; padding: 2px 4px; border-radius: 6px; user-select: none; line-height: 1; }
+.grip:hover, .grip:focus-visible { background: var(--bg); color: var(--ink); outline: none; }
+.grip:active { cursor: grabbing; }
+.steps li.dragging { opacity: .4; }
+.steps li.dragover { box-shadow: 0 -2px 0 0 var(--accent); }
+.mv { display: none; }
+@media (hover: none) { .mv { display: inline-flex; } .grip { display: none; } }
+@media (max-width: 700px) { .stepdate { width: 112px; flex-basis: 112px; } }
+
+.deadline-tag { font-size: 10px; background: #fde7d3; color: #9a4a00; padding: 1px 6px; border-radius: 6px; margin-right: 4px; white-space: nowrap; }
+.steps li .grip, .steps li .mv { flex: 0 0 auto; }
