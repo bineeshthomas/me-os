@@ -342,3 +342,12 @@ p.card { margin: 0; }
 .habit em { font-size: 10px; }
 .habit-x { top: 1px; right: 1px; font-size: 10px; padding: 0 3px; }
 @media (max-width: 700px) { .habits { grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); } }
+
+/* Work / personal projects */
+.seg { display: inline-flex; gap: 4px; background: var(--bg); border: 1px solid var(--line); border-radius: 999px; padding: 3px; align-self: flex-start; }
+.seg button { padding: 4px 12px; border-radius: 999px; background: none; font-size: 12px; color: var(--muted); }
+.seg button.sel { background: #fff; color: var(--ink); font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+.pcard { position: relative; }
+.pcard.personal { border-left: 4px solid #d98cb3; background: linear-gradient(90deg, #fdf3f8, #fff 40%); }
+.ptag { align-self: flex-start; font-size: 10px; font-weight: 600; background: #fbe3ef; color: #a1366f; border-radius: 999px; padding: 1px 8px; }
+.row .ptag { background: none; padding: 0 4px 0 0; font-size: 12px; }

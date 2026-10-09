@@ -116,3 +116,6 @@ INSERT INTO habits (name, icon, points)
   SELECT v.name, v.icon, 10 FROM (VALUES ('Worked out', '💪'), ('Read a book', '📖')) AS v(name, icon)
   WHERE NOT EXISTS (SELECT 1 FROM settings WHERE key = 'habits_seeded');
 INSERT INTO settings (key, value) VALUES ('habits_seeded', '1') ON CONFLICT (key) DO NOTHING;
+
+-- Projects are either work (default) or personal
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS category TEXT NOT NULL DEFAULT 'work' CHECK (category IN ('work', 'personal'));

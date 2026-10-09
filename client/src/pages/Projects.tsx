@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { api, type Project } from '../api'
+import { api, type Category, type Project } from '../api'
 
 const fmtDate = (iso: string) => new Date(iso).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' })
 
@@ -14,12 +14,25 @@ const ago = (iso: string) => {
 
 const progress = (p: Project) => p.steps.filter((s) => s.done).length
 
+function CategoryPicker({ value, onChange }: { value: Category; onChange: (c: Category) => void }) {
+  return (
+    <div className="seg" role="radiogroup" aria-label="Project type">
+      {(['work', 'personal'] as const).map((c) => (
+        <button key={c} type="button" role="radio" aria-checked={value === c} className={value === c ? 'sel' : ''} onClick={() => onChange(c)}>
+          {c === 'work' ? '💼 Work' : '🏠 Personal'}
+        </button>
+      ))}
+    </div>
+  )
+}
+
 export default function Projects() {
   const [projects, setProjects] = useState<Project[]>([])
   const [adding, setAdding] = useState(false)
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [steps, setSteps] = useState('')
+  const [category, setCategory] = useState<Category>('work')
   const [openId, setOpenId] = useState<number | null>(null)
   const [error, setError] = useState('')
 
@@ -30,8 +43,8 @@ export default function Projects() {
 
   const create = async (e: FormEvent) => {
     e.preventDefault()
-    await run(api.createProject(title, description, steps.split('\n')))
-    setTitle(''); setDescription(''); setSteps(''); setAdding(false)
+    await run(api.createProject(title, description, steps.split('\n'), category))
+    setTitle(''); setDescription(''); setSteps(''); setCategory('work'); setAdding(false)
   }
 
   const open = projects.find((p) => p.id === openId)
@@ -50,6 +63,7 @@ export default function Projects() {
       {adding && (
         <form className="card form" onSubmit={create}>
           <input required autoFocus placeholder="Project title" value={title} onChange={(e) => setTitle(e.target.value)} />
+          <CategoryPicker value={category} onChange={setCategory} />
           <textarea placeholder="Context / description" value={description} onChange={(e) => setDescription(e.target.value)} />
           <textarea placeholder="Steps, one per line" value={steps} onChange={(e) => setSteps(e.target.value)} />
           <button className="primary">Create</button>
@@ -63,7 +77,8 @@ export default function Projects() {
           const done = progress(p)
           const pct = p.steps.length ? Math.round((done / p.steps.length) * 100) : 0
           return (
-            <button key={p.id} className="card pcard" onClick={() => setOpenId(p.id)}>
+            <button key={p.id} className={p.category === 'personal' ? 'card pcard personal' : 'card pcard'} onClick={() => setOpenId(p.id)}>
+              {p.category === 'personal' && <span className="ptag">🏠 Personal</span>}
               <b>{p.title}</b>
               <div className="pmeta">
                 <div className="bar"><i style={{ width: `${pct}%` }} /></div>
@@ -91,7 +106,7 @@ function ProjectDetail({ project: p, run, onClose }: { project: Project; run: (p
     const next = { title: p.title, description: p.description ?? '', [field]: value.trim() }
     if (field === 'title' && !next.title) return // a project needs a name
     if (next.title === p.title && next.description === (p.description ?? '')) return
-    run(api.updateProject(p.id, next.title, next.description))
+    run(api.updateProject(p.id, { title: next.title, description: next.description }))
   }
 
   return (
@@ -101,6 +116,7 @@ function ProjectDetail({ project: p, run, onClose }: { project: Project; run: (p
           <input className="ptitle" defaultValue={p.title} aria-label="Project title" onBlur={(e) => saveHeader('title', e.target.value)} />
           <button className="ghost" aria-label="Close" onClick={onClose}>✕</button>
         </div>
+        <CategoryPicker value={p.category} onChange={(c) => c !== p.category && run(api.updateProject(p.id, { category: c }))} />
         <small className="muted">Created {fmtDate(p.created_at)} · Updated {ago(p.updated_at)}</small>
         <textarea
           className="pdesc" rows={2} placeholder="Context / description" defaultValue={p.description ?? ''}

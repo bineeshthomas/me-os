@@ -9,6 +9,8 @@ const PROJECTS_SQL = `
              ORDER BY s.position, s.id) FILTER (WHERE s.id IS NOT NULL), '[]') AS steps
   FROM projects p LEFT JOIN project_steps s ON s.project_id = p.id`;
 
+const CATEGORIES = ["work", "personal"];
+
 // Projects
 api.get("/projects", async (_req, res) => {
   const { rows } = await pool.query(`${PROJECTS_SQL} GROUP BY p.id ORDER BY p.updated_at DESC, p.id DESC`);
@@ -16,11 +18,12 @@ api.get("/projects", async (_req, res) => {
 });
 
 api.post("/projects", async (req, res) => {
-  const { title, description, steps } = req.body ?? {};
+  const { title, description, steps, category } = req.body ?? {};
   if (!title) return res.status(400).json({ error: "title is required" });
+  if (category != null && !CATEGORIES.includes(category)) return res.status(400).json({ error: "category must be work or personal" });
   const { rows } = await pool.query(
-    "INSERT INTO projects (title, description) VALUES ($1, $2) RETURNING id",
-    [title, description ?? null],
+    "INSERT INTO projects (title, description, category) VALUES ($1, $2, $3) RETURNING id",
+    [title, description ?? null, category ?? "work"],
   );
   const list: string[] = Array.isArray(steps) ? steps.filter((s) => typeof s === "string" && s.trim()) : [];
   for (const [i, s] of list.entries()) {
@@ -31,10 +34,12 @@ api.post("/projects", async (req, res) => {
 });
 
 api.patch("/projects/:id", async (req, res) => {
-  const { title, description } = req.body ?? {};
+  const { title, description, category } = req.body ?? {};
+  if (category != null && !CATEGORIES.includes(category)) return res.status(400).json({ error: "category must be work or personal" });
   const { rows } = await pool.query(
-    "UPDATE projects SET title = COALESCE($2, title), description = COALESCE($3, description), updated_at = now() WHERE id = $1 RETURNING id",
-    [req.params.id, title ?? null, description ?? null],
+    `UPDATE projects SET title = COALESCE($2, title), description = COALESCE($3, description),
+       category = COALESCE($4, category), updated_at = now() WHERE id = $1 RETURNING id`,
+    [req.params.id, title ?? null, description ?? null, category ?? null],
   );
   if (!rows[0]) return res.status(404).json({ error: "not found" });
   const out = await pool.query(`${PROJECTS_SQL} WHERE p.id = $1 GROUP BY p.id`, [req.params.id]);

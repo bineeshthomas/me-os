@@ -1,5 +1,6 @@
 export interface Step { id: number; title: string; done: boolean; position: number }
-export interface Project { id: number; title: string; description: string | null; created_at: string; updated_at: string; steps: Step[] }
+export type Category = 'work' | 'personal'
+export interface Project { id: number; title: string; description: string | null; category: Category; created_at: string; updated_at: string; steps: Step[] }
 export interface Note { id: number; title: string; body: string; created_at: string; updated_at: string }
 export type Kind = 'task' | 'call' | 'email' | 'message' | 'meeting' | 'reminder'
 export type MessageApp = 'whatsapp' | 'teams'
@@ -50,11 +51,12 @@ async function req<T>(method: string, path: string, body?: unknown): Promise<T> 
 export const api = {
   dashboard: () => req<Dashboard>('GET', '/dashboard'),
   projects: () => req<Project[]>('GET', '/projects'),
-  createProject: (title: string, description: string, steps: string[]) =>
-    req<Project>('POST', '/projects', { title, description, steps }),
+  createProject: (title: string, description: string, steps: string[], category: Category) =>
+    req<Project>('POST', '/projects', { title, description, steps, category }),
   deleteProject: (id: number) => req<void>('DELETE', `/projects/${id}`),
   addStep: (projectId: number, title: string) => req<Step>('POST', `/projects/${projectId}/steps`, { title }),
-  updateProject: (id: number, title: string, description: string) => req<Project>('PATCH', `/projects/${id}`, { title, description }),
+  updateProject: (id: number, patch: { title?: string; description?: string; category?: Category }) =>
+    req<Project>('PATCH', `/projects/${id}`, patch),
   renameStep: (id: number, title: string) => req<Step>('PATCH', `/steps/${id}`, { title }),
   setStepDone: (id: number, done: boolean) => req<Step>('PATCH', `/steps/${id}`, { done }),
   deleteStep: (id: number) => req<void>('DELETE', `/steps/${id}`),

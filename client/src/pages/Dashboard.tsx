@@ -75,7 +75,7 @@ export default function Dashboard() {
         {data.projects.length === 0 && <p className="empty">No projects yet.</p>}
         {data.projects.map((p) => (
           <div key={p.id} className="row">
-            <span>{p.title} <small>· {new Date(p.created_at).toLocaleDateString([], { day: 'numeric', month: 'short' })}</small></span>
+            <span>{p.category === 'personal' && <span className="ptag" title="Personal project">🏠</span>}{p.title} <small>· {new Date(p.created_at).toLocaleDateString([], { day: 'numeric', month: 'short' })}</small></span>
             <div className="bar"><i style={{ width: `${progress(p.steps)}%` }} /></div>
             <small>{progress(p.steps)}%</small>
           </div>
