@@ -73,7 +73,7 @@ header > div:first-child { min-width: 0; }
 .pill { white-space: nowrap; }
 
 /* Tablet: widget rail drops below the content */
-@media (max-width: 1000px) {
+@media (max-width: 1100px) {
   .body { flex-direction: column; align-items: stretch; }
   .rail { width: auto; border-left: 0; border-top: 1px solid var(--line); padding: 16px 24px 24px; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
   nav { width: 180px; }
@@ -109,7 +109,7 @@ header > div:first-child { min-width: 0; }
 header { flex-wrap: wrap; }
 header h1 { white-space: nowrap; }
 .searchbtn { min-width: 240px; }
-@media (max-width: 1000px) {
+@media (max-width: 1100px) {
   .searchbtn { order: 3; flex: 1 1 100%; max-width: none; }
   header > div:first-child { flex: 1 1 auto; }
 }
@@ -526,7 +526,97 @@ a.navbtn { display: inline-flex; align-items: center; text-decoration: none; }
 
 /* Tasks / reminders column sits right after the left menu (the primary work area) */
 .rail { border-left: 0; border-right: 1px solid var(--line); }
-@media (max-width: 1000px) {
+@media (max-width: 1100px) {
   /* Stacked layout: page content first, the column below it */
   .rail { order: 2; border-right: 0; border-top: 1px solid var(--line); }
+}
+
+/* ===== Responsiveness review fixes ===== */
+
+/* Checkboxes and radios must never inherit the full-width text-field styling */
+input[type=checkbox], input[type=radio] { width: auto; padding: 0; }
+
+/* Project editor: keep the close button beside the title on phones */
+.pdetail > .head { flex-wrap: nowrap; align-items: center; }
+.ptitle { flex: 1; min-width: 0; }
+
+/* Touch and phone: comfortable tap targets, and 16px fields so iPhones don't zoom in on focus */
+@media (max-width: 700px), (pointer: coarse) {
+  input:not([type=checkbox]):not([type=radio]):not([type=range]), textarea, select { font-size: 16px; }
+  .datein, .stepdate { font-size: 16px; }
+  .ghost { min-width: 38px; min-height: 38px; display: inline-flex; align-items: center; justify-content: center; }
+  .widget .head .ghost { width: 40px; height: 40px; font-size: 22px; }
+  .primary, .navbtn, .stopbtn { min-height: 40px; }
+  .pill { min-height: 36px; display: inline-flex; align-items: center; }
+  .seg button, .scale button, .app-btn, button.tag { min-height: 36px; }
+  .seg button { padding-left: 14px; padding-right: 14px; }
+  .linklike { padding: 9px 0; }
+  .more, .card h2 .more { display: inline-block; padding: 8px 4px; }
+  /* tick circles: bigger, with an even bigger invisible hit area, and room between rows */
+  .circle { width: 26px; height: 26px; position: relative; flex: 0 0 auto; font-size: 13px; }
+  .circle::after { content: ''; position: absolute; inset: -9px; }
+  .steps li { padding: 5px 0; gap: 10px; }
+  .habit-x { width: 28px; height: 28px; opacity: .7; font-size: 12px; }
+  .tagbox .tag button { min-width: 24px; min-height: 24px; }
+  .sec-toggle { padding: 8px 0; }
+}
+
+/* Project editor step rows on phones: the due date moves to its own line under the title */
+@media (max-width: 700px) {
+  .pdetail .steps li { flex-wrap: wrap; row-gap: 0; }
+  .pdetail .stepedit { flex: 1 1 0; min-width: 100px; }
+  .pdetail .stepdate { order: 9; flex: 0 0 calc(100% - 56px); margin-left: 56px; width: auto; }
+}
+
+/* Very small phones (320px): the 7-day strip and the tab bar have to shrink to fit */
+@media (max-width: 380px) {
+  .band-days { gap: 3px; }
+  .bday { min-width: 0; padding: 4px 0; }
+  .bday small { font-size: 9px; }
+  .bday span { font-size: 16px; }
+  nav a { min-width: 0; padding: 6px 0; font-size: 9.5px; }
+  .wstats, .pstats { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* Landscape phones: very little height, so make the chrome compact */
+@media (max-width: 700px) and (max-height: 480px) {
+  nav a .lbl { display: none; }
+  nav a { padding: 6px 4px; }
+  nav a .ico { font-size: 18px; }
+  .main { padding-bottom: 54px; }
+  header { padding: 6px 12px; gap: 6px; }
+  header small { display: none; }
+  header h1 { font-size: 15px; }
+  .searchbtn { order: 0; flex: 1 1 200px; min-height: 34px; padding-top: 4px; padding-bottom: 4px; }
+  .footer { padding: 4px 12px; }
+}
+
+/* Layout: the tasks column runs full height beside the menu; the title bar belongs to the content pane only */
+.body { align-items: stretch; }
+.pane { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.rail { align-self: stretch; }
+@media (max-width: 1100px) { .body { align-items: stretch; } }
+
+/* More audit fixes */
+@media (max-width: 460px) { nav a { min-width: 0; } }
+@media (max-width: 700px), (pointer: coarse) {
+  .searchbtn { min-height: 40px; }
+  .more, .card h2 .more { padding: 11px 4px; }
+  .stress input[type=range], .rv-row input[type=range] { height: 32px; }
+  .linkcard a { min-height: 38px; }
+}
+
+/* The search label shortens when the header is narrow (the title bar now spans only the content pane) */
+header { container: hdr / inline-size; }
+.searchbtn { white-space: nowrap; }
+.searchbtn .s-short { display: none; }
+@container hdr (min-width: 601px) and (max-width: 900px) {
+  .searchbtn .s-long { display: none; }
+  .searchbtn .s-short { display: inline; }
+  .searchbtn { min-width: 150px; }
+}
+@media (max-width: 380px) {
+  .focus-start { flex-wrap: wrap; }
+  .focus-start input { flex: 1 1 100%; }
+  .focus-start .primary { flex: 1 1 100%; }
 }

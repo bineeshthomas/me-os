@@ -239,7 +239,7 @@ export function Search() {
   return (
     <>
       <button className="searchbtn" onClick={() => setOpen(true)}>
-        🔍 Search projects, tasks, notes… <kbd>Ctrl K</kbd>
+        🔍 <span className="s-long">Search projects, tasks, notes…</span><span className="s-short">Search…</span> <kbd>Ctrl K</kbd>
       </button>
       {open && (
         <div className="overlay" onClick={close}>

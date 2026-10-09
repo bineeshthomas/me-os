@@ -97,19 +97,24 @@ export default function App() {
       </nav>
       <div className="main">
         {!online && <div className="offline">You're offline — showing saved data. Changes need a connection.</div>}
-        <header>
-          <div><h1>{title}</h1><small>{subtitle}</small></div>
-          <Search />
-          <div className="actions">
-            <FocusPill />
-            <Weather />
-            <button className="pill clock" onClick={() => setCalOpen(true)} title="Open calendar">
-              {time.toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' })} · {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            </button>
-          </div>
-        </header>
         {calOpen && <Calendar onClose={() => setCalOpen(false)} />}
-        <div className="body"><WidgetRail /><main><View key={`${route.key}:${route.arg ?? ''}`} arg={route.arg} /></main></div>
+        <div className="body">
+          <WidgetRail />
+          <div className="pane">
+            <header>
+              <div><h1>{title}</h1><small>{subtitle}</small></div>
+              <Search />
+              <div className="actions">
+                <FocusPill />
+                <Weather />
+                <button className="pill clock" onClick={() => setCalOpen(true)} title="Open calendar">
+                  {time.toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' })} · {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </button>
+              </div>
+            </header>
+            <main><View key={`${route.key}:${route.arg ?? ''}`} arg={route.arg} /></main>
+          </div>
+        </div>
         <Footer page={page} />
       </div>
     </div>
