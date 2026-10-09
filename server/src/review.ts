@@ -260,3 +260,38 @@ review.get("/review-summary/:date", async (req, res) => {
       .filter((g) => g.points > 0),
   });
 });
+
+// --- History: one month of reviews for the heatmap, plus weekday averages over all time
+review.get("/review-history", async (req, res) => {
+  const month = String(req.query.month ?? "");
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) return res.status(400).json({ error: "month must be YYYY-MM" });
+  const start = `${month}-01`;
+
+  const [days, weekday, months] = await Promise.all([
+    pool.query(
+      `SELECT to_char(r.date, 'YYYY-MM-DD') AS date, r.rating, r.energy, r.stress, r.completed_at IS NOT NULL AS completed,
+              r.wins, r.went_well, r.blocker, r.learned, r.gratitude, r.brain_dump, r.priorities,
+              (SELECT COUNT(*) FROM habit_logs h WHERE h.date = r.date)::int AS habits_done,
+              (SELECT COALESCE(SUM(EXTRACT(EPOCH FROM (COALESCE(f.ended_at, now()) - f.started_at))), 0)::int
+                 FROM focus_sessions f WHERE f.started_at::date = r.date) AS focus_seconds
+       FROM daily_reviews r
+       WHERE r.date >= $1::date AND r.date < ($1::date + interval '1 month') ORDER BY r.date`,
+      [start],
+    ),
+    pool.query(
+      `SELECT EXTRACT(DOW FROM date)::int AS dow, COUNT(*)::int AS n,
+              ROUND(AVG(rating)::numeric, 1)::float8 AS rating,
+              ROUND(AVG(energy)::numeric, 1)::float8 AS energy,
+              ROUND(AVG(stress)::numeric, 0)::float8 AS stress
+       FROM daily_reviews WHERE completed_at IS NOT NULL GROUP BY dow ORDER BY dow`,
+    ),
+    pool.query("SELECT DISTINCT to_char(date, 'YYYY-MM') AS month FROM daily_reviews WHERE completed_at IS NOT NULL ORDER BY month"),
+  ]);
+
+  res.json({
+    month,
+    days: days.rows,
+    weekday: weekday.rows,
+    months_with_data: months.rows.map((r) => r.month),
+  });
+});

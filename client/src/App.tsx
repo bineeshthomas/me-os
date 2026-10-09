@@ -1,28 +1,37 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ComponentType } from 'react'
 import Dashboard from './pages/Dashboard'
 import Projects from './pages/Projects'
 import Notes from './pages/Notes'
 import Activity from './pages/Activity'
 import DailyReview from './pages/DailyReview'
+import History from './pages/History'
 import Links from './pages/Links'
 import Settings from './pages/Settings'
 import { Calendar, Footer, Search, Weather, WidgetRail } from './components'
 import { FocusPill } from './focus'
 
-const PAGES = {
+interface Page {
+  label: string; icon: string; title: string; subtitle: string
+  view: ComponentType<{ arg?: string }>
+  hidden?: boolean // reachable by link, not shown in the menu
+  parent?: string // menu item to highlight while on this page
+}
+
+const PAGES: Record<string, Page> = {
   home: { label: 'Home', icon: '🏠', title: 'Dashboard ⚓', subtitle: 'Personal Control Surface', view: Dashboard },
   projects: { label: 'Projects', icon: '📋', title: 'Projects 📋', subtitle: 'Structured Goals & Milestones', view: Projects },
   notes: { label: 'Notes', icon: '📝', title: 'Notes 📝', subtitle: 'Instant Context & Ideas', view: Notes },
   review: { label: 'Daily Review', icon: '🌙', title: 'Daily Review 🌙', subtitle: 'Close the day, plan tomorrow', view: DailyReview },
+  history: { label: 'Review History', icon: '📊', title: 'Review History 📊', subtitle: 'Spot patterns in your days', view: History, hidden: true, parent: 'review' },
   activity: { label: 'Activity', icon: '⏱️', title: 'Activity ⏱️', subtitle: 'Focus time log', view: Activity },
   links: { label: 'Links', icon: '🔗', title: 'Links 🔗', subtitle: 'Quick Launch', view: Links },
   settings: { label: 'Settings', icon: '⚙️', title: 'Settings ⚙️', subtitle: 'Connections & Preferences', view: Settings },
-} as const
-type Key = keyof typeof PAGES
+}
 
-const current = (): Key => {
-  const h = window.location.hash.slice(1)
-  return h in PAGES ? (h as Key) : 'home'
+// "#review:2026-10-07" -> page "review" with argument "2026-10-07"
+const current = (): { key: string; arg?: string } => {
+  const [k, arg] = window.location.hash.slice(1).split(':')
+  return { key: k in PAGES ? k : 'home', arg }
 }
 
 function useOnline() {
@@ -38,19 +47,21 @@ function useOnline() {
 }
 
 export default function App() {
-  const [page, setPage] = useState<Key>(current)
+  const [route, setRoute] = useState(current)
+  const page = route.key
   const online = useOnline()
   const [calOpen, setCalOpen] = useState(false)
   const [time, setTime] = useState(() => new Date())
 
   useEffect(() => {
-    const onHash = () => setPage(current())
+    const onHash = () => setRoute(current())
     window.addEventListener('hashchange', onHash)
     const t = setInterval(() => setTime(new Date()), 30_000)
     return () => { window.removeEventListener('hashchange', onHash); clearInterval(t) }
   }, [])
 
   const { title, subtitle, view: View } = PAGES[page]
+  const activeMenu = PAGES[page].parent ?? page
 
   return (
     <div className="app">
@@ -60,9 +71,9 @@ export default function App() {
           <b>Main Deck</b>
         </div>
         <small className="section">Workspace</small>
-        {(Object.keys(PAGES) as Key[]).map((k) => (
-          <a key={k} href={`#${k}`} className={k === page ? 'active' : ''}>
-            <span>{PAGES[k].icon}</span>{PAGES[k].label}
+        {Object.entries(PAGES).filter(([, p]) => !p.hidden).map(([k, p]) => (
+          <a key={k} href={`#${k}`} className={k === activeMenu ? 'active' : ''}>
+            <span>{p.icon}</span>{p.label}
           </a>
         ))}
       </nav>
@@ -80,7 +91,7 @@ export default function App() {
           </div>
         </header>
         {calOpen && <Calendar onClose={() => setCalOpen(false)} />}
-        <div className="body"><main><View /></main><WidgetRail /></div>
+        <div className="body"><main><View key={`${route.key}:${route.arg ?? ''}`} arg={route.arg} /></main><WidgetRail /></div>
         <Footer page={page} />
       </div>
     </div>

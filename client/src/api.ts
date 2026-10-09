@@ -38,6 +38,15 @@ export interface FocusRunning { id: number; activity: string; started_at: string
 export interface FocusStatus { now: string; running: FocusRunning | null; today_seconds: number; today_sessions: number; week_seconds: number }
 export interface FocusSession { id: number; activity: string; started_at: string; ended_at: string | null; running: boolean; seconds: number }
 export interface FocusPage { items: FocusSession[]; total: number; page: number; pages: number; page_size: number }
+export interface HistoryDay {
+  date: string; rating: number | null; energy: number | null; stress: number | null; completed: boolean
+  wins: string; went_well: string; blocker: string; learned: string; gratitude: string; brain_dump: string
+  priorities: string[]; habits_done: number; focus_seconds: number
+}
+export interface HistoryData {
+  month: string; days: HistoryDay[]; months_with_data: string[]
+  weekday: { dow: number; n: number; rating: number | null; energy: number | null; stress: number | null }[]
+}
 export interface Dashboard {
   counts: { projects: number; notes: number; open_steps: number; done_steps: number }
   projects: Project[]
@@ -91,6 +100,7 @@ export const api = {
   reviewDay: (date: string) => req<ReviewDay>('GET', `/review/${date}`),
   saveReview: (date: string, patch: Partial<ReviewRow> & { complete?: boolean }) =>
     req<ReviewRow & { rolled_over: number }>('PUT', `/review/${date}`, patch),
+  reviewHistory: (month: string) => req<HistoryData>('GET', `/review-history?month=${month}`),
   weekSummary: (date: string) => req<WeekSummary>('GET', `/review-summary/${date}`),
   focus: () => req<Focus>('GET', '/focus'),
   setHabit: (date: string, id: number, done: boolean) => req<void>('PUT', `/review/${date}/habits/${id}`, { done }),

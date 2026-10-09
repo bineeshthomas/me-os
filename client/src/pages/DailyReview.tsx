@@ -53,9 +53,9 @@ const toFields = (r: ReviewRow | null, stress: number): Fields => ({
   stress: r?.stress ?? stress,
 })
 
-export default function DailyReview() {
+export default function DailyReview({ arg }: { arg?: string }) {
   const today = ymd(new Date())
-  const [date, setDate] = useState(today)
+  const [date, setDate] = useState(arg && /^\d{4}-\d{2}-\d{2}$/.test(arg) && arg <= today ? arg : today)
   const [day, setDay] = useState<ReviewDay | null>(null)
   const [week, setWeek] = useState<WeekSummary | null>(null)
   const [f, setF] = useState<Fields | null>(null)
@@ -131,6 +131,7 @@ export default function DailyReview() {
           <span className="badge">🔥 {day.review_streak} night streak</span>
           <span className="badge">⭐ {day.points_today} pts today</span>
           {day.focus_seconds > 0 && <span className="badge">⏱️ {Math.floor(day.focus_seconds / 3600) > 0 ? `${Math.floor(day.focus_seconds / 3600)}h ` : ''}{Math.floor((day.focus_seconds % 3600) / 60)}m focused</span>}
+          <a className="navbtn" href="#history">📊 History</a>
           <button className="navbtn" onClick={() => setAll(true)}>Collapse all</button>
           <button className="navbtn" onClick={() => setAll(false)}>Expand all</button>
         </div>
