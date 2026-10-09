@@ -51,29 +51,47 @@ export default function App() {
   const page = route.key
   const online = useOnline()
   const [calOpen, setCalOpen] = useState(false)
+  // Sidebar collapses to an icon rail; the choice is remembered
+  const [collapsed, setCollapsed] = useState(() => {
+    try { return localStorage.getItem('nav-collapsed') === '1' } catch { return false }
+  })
+  const toggleNav = () => setCollapsed((c) => {
+    try { localStorage.setItem('nav-collapsed', c ? '0' : '1') } catch { /* ignore */ }
+    return !c
+  })
   const [time, setTime] = useState(() => new Date())
 
   useEffect(() => {
     const onHash = () => setRoute(current())
+    // Ctrl/Cmd+B toggles the sidebar (not while typing in a field)
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b' && !/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) && !t.isContentEditable) {
+        e.preventDefault(); toggleNav()
+      }
+    }
+    window.addEventListener('keydown', onKey)
     window.addEventListener('hashchange', onHash)
     const t = setInterval(() => setTime(new Date()), 30_000)
-    return () => { window.removeEventListener('hashchange', onHash); clearInterval(t) }
+    return () => { window.removeEventListener('hashchange', onHash); window.removeEventListener('keydown', onKey); clearInterval(t) }
   }, [])
 
   const { title, subtitle, view: View } = PAGES[page]
   const activeMenu = PAGES[page].parent ?? page
 
   return (
-    <div className="app">
+    <div className={collapsed ? 'app collapsed' : 'app'}>
       <nav>
         <div className="brand">
           <div className="logo">⚓</div>
           <b>Main Deck</b>
         </div>
+        <button className="navtoggle" onClick={toggleNav} aria-expanded={!collapsed} aria-label={collapsed ? 'Expand menu' : 'Collapse menu'}
+          title={`${collapsed ? 'Expand' : 'Collapse'} menu (Ctrl+B)`}>{collapsed ? '»' : '«'}</button>
         <small className="section">Workspace</small>
         {Object.entries(PAGES).filter(([, p]) => !p.hidden).map(([k, p]) => (
-          <a key={k} href={`#${k}`} className={k === activeMenu ? 'active' : ''}>
-            <span>{p.icon}</span>{p.label}
+          <a key={k} href={`#${k}`} className={k === activeMenu ? 'active' : ''} title={collapsed ? p.label : undefined} aria-label={p.label}>
+            <span className="ico">{p.icon}</span><span className="lbl">{p.label}</span>
           </a>
         ))}
       </nav>

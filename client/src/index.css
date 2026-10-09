@@ -508,3 +508,18 @@ a.navbtn { display: inline-flex; align-items: center; text-decoration: none; }
   .hm-cell { aspect-ratio: 1; min-height: 0; }
   .hm-cell small { font-size: 9px; }
 }
+
+/* Collapsible sidebar (desktop and tablet only; the phone keeps its bottom tab bar) */
+.navtoggle { display: none; }
+@media (min-width: 701px) {
+  nav { transition: width .18s ease; overflow: hidden; }
+  .navtoggle { display: grid; place-items: center; align-self: flex-end; width: 28px; height: 28px; margin: -8px 4px 4px 0; border-radius: 50%; background: rgba(255,255,255,.35); color: var(--mint-dark); font-size: 14px; line-height: 1; }
+  .navtoggle:hover { background: #fff; }
+  .app.collapsed nav { width: 64px; padding-left: 8px; padding-right: 8px; }
+  .app.collapsed .navtoggle { align-self: center; margin: -8px 0 6px; }
+  .app.collapsed .brand b, .app.collapsed .section, .app.collapsed nav a .lbl { display: none; }
+  .app.collapsed .logo { width: 40px; height: 40px; font-size: 20px; }
+  .app.collapsed .brand { margin-bottom: 12px; }
+  .app.collapsed nav a { justify-content: center; padding: 10px 0; }
+  .app.collapsed nav a .ico { font-size: 18px; }
+}

@@ -19,6 +19,7 @@ npm run dev:client   # UI on http://localhost:5173 (proxies /api to the API)
 Copy `server/.env.example` to `server/.env` if it doesn't exist.
 
 ## Features
+- **Sidebar** - collapse it to an icon rail with the « button or Ctrl/Cmd+B (remembered; phones keep the bottom tab bar)
 - **Dashboard** - a 7-day daily-review band with your night streak, counts, active project progress, recent notes
 - **Projects** - compact cards, most recently created/updated first; each is Work (default) or Personal (pink badge); click one to edit its title, description, type, due date and steps (drag the ⋮⋮ handle, or use the arrow keys, to reorder steps; each step can have a due date)
 - **Notes** - markdown notes with checklists (tick items right on the card), `#tags` with filtering and search, and pin-to-top
