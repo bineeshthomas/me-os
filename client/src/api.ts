@@ -1,8 +1,13 @@
 export interface Step { id: number; title: string; done: boolean; position: number; due_date: string | null }
 export type Category = 'work' | 'personal'
-export interface Project { id: number; title: string; description: string | null; category: Category; due_date: string | null; created_at: string; updated_at: string; steps: Step[] }
-export interface Note { id: number; title: string; body: string; tags: string[]; pinned: boolean; created_at: string; updated_at: string }
-export interface NotePatch { title?: string; body?: string; tags?: string[]; pinned?: boolean; touch?: boolean }
+export interface Project { id: number; title: string; description: string | null; category: Category; due_date: string | null; created_at: string; updated_at: string; steps: Step[]; notes: ProjectNote[] }
+export interface Note {
+  id: number; title: string; body: string; tags: string[]; pinned: boolean; created_at: string; updated_at: string
+  project_id: number | null; project_title: string | null; project_category: Category | null
+}
+export interface NotePatch { title?: string; body?: string; tags?: string[]; pinned?: boolean; touch?: boolean; project_id?: number | null }
+export interface NoteDraft { title: string; body: string; tags: string[]; pinned: boolean; project_id: number | null }
+export interface ProjectNote { id: number; title: string; pinned: boolean; updated_at: string }
 export type Kind = 'task' | 'call' | 'email' | 'message' | 'meeting' | 'reminder'
 export type MessageApp = 'whatsapp' | 'teams'
 export interface Item { id: number; kind: Kind; title: string; due_at: string | null; done: boolean; completed_at: string | null; app: MessageApp | null }
@@ -118,7 +123,8 @@ export const api = {
   renameFocus: (id: number, activity: string) => req<void>('PATCH', `/focus/sessions/${id}`, { activity }),
   deleteFocus: (id: number) => req<void>('DELETE', `/focus/sessions/${id}`),
   notes: () => req<Note[]>('GET', '/notes'),
-  createNote: (note: { title: string; body: string; tags: string[]; pinned: boolean }) => req<Note>('POST', '/notes', note),
+  note: (id: number) => req<Note>('GET', `/notes/${id}`),
+  createNote: (note: NoteDraft) => req<Note>('POST', '/notes', note),
   updateNote: (id: number, patch: NotePatch) => req<Note>('PATCH', `/notes/${id}`, patch),
   deleteNote: (id: number) => req<void>('DELETE', `/notes/${id}`),
 }

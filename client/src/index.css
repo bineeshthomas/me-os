@@ -620,3 +620,44 @@ header { container: hdr / inline-size; }
   .focus-start input { flex: 1 1 100%; }
   .focus-start .primary { flex: 1 1 100%; }
 }
+
+/* ===== Notes linked to projects ===== */
+/* Shared note editor */
+.noteform { display: flex; flex-direction: column; gap: 10px; }
+.nf-title { font-size: 16px; font-weight: 700; }
+.nf-meta { display: flex; gap: 14px; align-items: flex-end; flex-wrap: wrap; }
+.nf-meta label { margin: 0; }
+.nf-label { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 600; }
+.nf-pin { flex-direction: row !important; align-items: center; gap: 6px !important; font-weight: 500 !important; padding-bottom: 8px; }
+.projselect, .projfilter { font: inherit; font-size: 13px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--ink); max-width: 100%; min-width: 180px; }
+.nf-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.nf-actions .danger { margin-left: auto; }
+.ghost.danger:hover { color: var(--danger); }
+
+/* Project chip on a note card */
+.projchip { align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; max-width: 100%; font-size: 11px; font-weight: 600; text-decoration: none; background: #e8f0fb; color: #1f4f8f; border-radius: 999px; padding: 2px 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.projchip:hover { background: #d3e2f7; }
+.projchip.personal { background: #fbe3ef; color: #a1366f; }
+.projchip.personal:hover { background: #f6cfe1; }
+.notebar-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.notebar-row input[type=search] { flex: 1 1 220px; }
+
+/* Notes inside the project editor */
+.psec { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); }
+.psec-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; }
+.psec-head h4 { margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.psec-head h4 small { background: var(--bg); border: 1px solid var(--line); border-radius: 99px; padding: 0 7px; margin-left: 4px; font-size: 11px; color: var(--ink); }
+.addnote { color: var(--accent); font-weight: 600; background: #eef0ff; border-radius: 999px; padding: 4px 12px; }
+.addnote:hover { background: #e0e4ff; color: var(--accent); }
+.psec-empty { margin: 8px 0 2px; font-size: 13px; color: var(--muted); background: var(--bg); border: 1px dashed var(--line); border-radius: 10px; padding: 10px 12px; }
+.pnotes { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.pnotes button { width: 100%; display: grid; grid-template-columns: 22px 1fr auto 14px; align-items: center; gap: 8px; text-align: left; font: inherit; color: var(--ink); background: #fffefb; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; cursor: pointer; }
+.pnotes button:hover { border-color: var(--accent); background: #f7f7ff; }
+.pnotes b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pnotes small { color: var(--muted); }
+.pnotes .go { color: var(--muted); font-size: 16px; }
+.ncount { color: var(--ink); font-weight: 600; }
+.overlay.top { z-index: 30; }
+.notedlg { width: min(700px, 94vw); align-self: flex-start; max-height: 90vh; overflow: auto; display: flex; flex-direction: column; gap: 8px; }
+.notedlg .head h3 { margin: 0; font-size: 15px; overflow-wrap: anywhere; }
+@media (max-width: 700px) { .nf-meta { align-items: stretch; } .projselect { width: 100%; } .overlay.top { padding-top: 4vh; } }

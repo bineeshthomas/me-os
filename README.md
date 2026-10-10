@@ -22,6 +22,7 @@ Copy `server/.env.example` to `server/.env` if it doesn't exist.
 - **Sidebar** - collapse it to an icon rail with the « button or Ctrl/Cmd+B (remembered; phones keep the bottom tab bar)
 - **Dashboard** - a 7-day daily-review band with your night streak, counts, active project progress, recent notes
 - **Projects** - compact cards, most recently created/updated first; each is Work (default) or Personal (pink badge); click one to edit its title, description, type, due date and steps (drag the ⋮⋮ handle, or use the arrow keys, to reorder steps; each step can have a due date)
+- **Project notes** - add notes from inside a project (title list in the project editor; click a title to read or edit it). Every note also appears on the Notes page with a link back to its project, and any note can be linked to a project from the Notes page. Deleting a project keeps its notes
 - **Notes** - markdown notes with checklists (tick items right on the card), `#tags` with filtering and search, and pin-to-top
 - **Daily Review** - nightly page (every section collapses; the choice is remembered) (top 3 for tomorrow also show on the dashboard): one-tap check-ins with streaks (worked out, read...), wins, unfinished items (shown read-only; dated ones roll over to the next day when you finish the review), long-term goals advanced by tiny point steps, reflection, top 3 for tomorrow, brain dump, ratings, and a 7-day summary
 - **Review History** (button on the Daily Review page) - browse past reviews with a month heatmap of day rating, energy or stress, month stats, weekday patterns across all your reviews, and a detail view per day
@@ -51,4 +52,4 @@ The client is an installable PWA (manifest, icons, service worker). Build it wit
 - `GET|POST /api/habits`, `GET|POST /api/goals`, `POST /api/goals/:id/entries`
 - `GET /api/focus/status`, `POST /api/focus/start|stop`, `GET /api/focus/sessions?page=&page_size=`, `PATCH|DELETE /api/focus/sessions/:id`
 - `GET|POST /api/links`, `PATCH|DELETE /api/links/:id`
-- `GET|POST /api/notes`, `PATCH|DELETE /api/notes/:id`
+- `GET /api/notes[?project_id=]`, `GET|PATCH|DELETE /api/notes/:id`, `POST /api/notes` (notes take an optional `project_id`)

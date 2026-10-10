@@ -138,3 +138,7 @@ CREATE INDEX IF NOT EXISTS focus_started_idx ON focus_sessions (started_at DESC)
 -- Notes: tags and pin-to-top
 ALTER TABLE notes ADD COLUMN IF NOT EXISTS pinned BOOLEAN NOT NULL DEFAULT FALSE;
 ALTER TABLE notes ADD COLUMN IF NOT EXISTS tags TEXT[] NOT NULL DEFAULT '{}';
+
+-- Notes can belong to a project (deleting the project keeps the note, just unlinked)
+ALTER TABLE notes ADD COLUMN IF NOT EXISTS project_id INTEGER REFERENCES projects(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS notes_project_idx ON notes (project_id);

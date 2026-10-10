@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { api, type Category, type Project, type Step } from '../api'
+import { api, type Category, type Note, type NoteDraft, type Project, type Step } from '../api'
+import NoteForm from '../NoteForm'
 
 const fmtDate = (iso: string) => new Date(iso).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' })
 
@@ -42,7 +43,7 @@ function CategoryPicker({ value, onChange }: { value: Category; onChange: (c: Ca
   )
 }
 
-export default function Projects() {
+export default function Projects({ arg }: { arg?: string }) {
   const [projects, setProjects] = useState<Project[]>([])
   const [adding, setAdding] = useState(false)
   const [title, setTitle] = useState('')
@@ -63,6 +64,14 @@ export default function Projects() {
     await run(api.createProject(title, description, steps.split('\n'), category, due || null))
     setTitle(''); setDescription(''); setSteps(''); setCategory('work'); setDue(''); setAdding(false)
   }
+
+  // A link like #projects:12 opens that project's editor straight away (once)
+  const consumedArg = useRef(false)
+  useEffect(() => {
+    if (consumedArg.current || !arg || projects.length === 0) return
+    const id = Number(arg)
+    if (projects.some((p) => p.id === id)) { setOpenId(id); consumedArg.current = true }
+  }, [arg, projects])
 
   const open = projects.find((p) => p.id === openId)
 
@@ -103,24 +112,28 @@ export default function Projects() {
                 <div className="bar"><i style={{ width: `${pct}%` }} /></div>
                 <small>{done}/{p.steps.length}</small>
               </div>
-              <small className="muted">Updated {ago(p.updated_at)}</small>
+              <small className="muted">Updated {ago(p.updated_at)}{p.notes.length > 0 && <span className="ncount" title={`${p.notes.length} note${p.notes.length === 1 ? '' : 's'}`}> · 📝 {p.notes.length}</span>}</small>
               {p.due_date && <span className={`due ${dueTone(p.due_date, finished)}`}>📅 {finished ? `Was due ${shortDate(p.due_date)}` : dueText(p.due_date)}</span>}
             </button>
           )
         })}
       </div>
 
-      {open && <ProjectDetail key={open.id} project={open} run={run} onClose={() => setOpenId(null)} />}
+      {open && <ProjectDetail key={open.id} project={open} projects={projects} run={run} onClose={() => setOpenId(null)} />}
     </>
   )
 }
 
-function ProjectDetail({ project: p, run, onClose }: { project: Project; run: (p: Promise<unknown>) => Promise<void>; onClose: () => void }) {
+function ProjectDetail({ project: p, projects, run, onClose }: { project: Project; projects: Project[]; run: (p: Promise<unknown>) => Promise<void>; onClose: () => void }) {
+  // Which note is open in the note dialog: {} = a new note, { id } = an existing one
+  const [noteDlg, setNoteDlg] = useState<{ id?: number } | null>(null)
+
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
+    // Esc closes the note dialog first, and only then the project
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && !noteDlg && onClose()
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [onClose])
+  }, [onClose, noteDlg])
 
   // Step order is kept locally so a drag feels instant, then saved
   const serverOrder = p.steps.map((s) => s.id).join(',')
@@ -172,6 +185,7 @@ function ProjectDetail({ project: p, run, onClose }: { project: Project; run: (p
           aria-label="Description" onBlur={(e) => saveHeader('description', e.target.value)}
         />
 
+        <div className="psec-head"><h4>✅ Steps <small>{p.steps.filter((x) => x.done).length}/{p.steps.length}</small></h4></div>
         <ul className="steps" onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setOverId(null) }}>
           {steps.map((s, index) => (
             <li
@@ -223,9 +237,82 @@ function ProjectDetail({ project: p, run, onClose }: { project: Project; run: (p
           <input name="step" placeholder="Add a step…" />
         </form>
 
-        <div className="actions pfoot">
-          <button className="ghost" onClick={() => confirm(`Delete "${p.title}"?`) && run(api.deleteProject(p.id)).then(onClose)}>Delete project</button>
+        <div className="psec">
+          <div className="psec-head">
+            <h4>📝 Notes <small>{p.notes.length}</small></h4>
+            <button className="ghost addnote" onClick={() => setNoteDlg({})}>+ Add note</button>
+          </div>
+          {p.notes.length === 0 ? (
+            <p className="psec-empty">No notes yet. Add one to keep context, decisions or links with this project.</p>
+          ) : (
+            <ul className="pnotes">
+              {p.notes.map((n) => (
+                <li key={n.id}>
+                  <button onClick={() => setNoteDlg({ id: n.id })} title="Open note">
+                    <span className="nico">{n.pinned ? '📌' : '📝'}</span>
+                    <b>{n.title}</b>
+                    <small>{new Date(n.updated_at).toLocaleDateString([], { day: 'numeric', month: 'short' })}</small>
+                    <span className="go" aria-hidden>›</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
+
+        <div className="actions pfoot">
+          <button className="ghost" onClick={() => confirm(`Delete "${p.title}"?${p.notes.length ? ` Its ${p.notes.length} note${p.notes.length === 1 ? '' : 's'} will be kept on the Notes page.` : ''}`) && run(api.deleteProject(p.id)).then(onClose)}>Delete project</button>
+        </div>
+      </div>
+      {noteDlg && <NoteDialog noteId={noteDlg.id} projectId={p.id} projects={projects} onClose={() => setNoteDlg(null)} onChanged={() => run(Promise.resolve())} />}
+    </div>
+  )
+}
+
+// Read or edit one note without leaving the project (opens in edit mode; Preview tab for reading)
+function NoteDialog({ noteId, projectId, projects, onClose, onChanged }: {
+  noteId?: number; projectId: number; projects: Project[]; onClose: () => void; onChanged: () => Promise<void>
+}) {
+  const [note, setNote] = useState<Note | null>(null)
+  const [loading, setLoading] = useState(noteId !== undefined)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    if (noteId === undefined) return
+    api.note(noteId).then(setNote).catch((e) => setError(e.message)).finally(() => setLoading(false))
+  }, [noteId])
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  const save = async (draft: NoteDraft) => {
+    if (noteId === undefined) await api.createNote(draft)
+    else await api.updateNote(noteId, draft)
+    await onChanged()
+    onClose()
+  }
+  const remove = async () => {
+    if (!note || !confirm(`Delete "${note.title}"?`)) return
+    await api.deleteNote(note.id).catch((e) => setError(e.message))
+    await onChanged()
+    onClose()
+  }
+
+  const linked = projects.find((x) => x.id === (note ? note.project_id : projectId))
+  return (
+    <div className="overlay top" onClick={onClose}>
+      <div className="card notedlg" role="dialog" aria-label={noteId === undefined ? 'New note' : 'Edit note'} onClick={(e) => e.stopPropagation()}>
+        <div className="head">
+          <h3>{noteId === undefined ? '📝 New note' : '📝 Note'}{linked && <small className="muted"> · {linked.category === 'personal' ? '🏠' : '📋'} {linked.title}</small>}</h3>
+          <button className="ghost" aria-label="Close" onClick={onClose}>✕</button>
+        </div>
+        {error && <p className="error">{error}</p>}
+        {loading ? <p className="empty">Loading…</p> : (noteId === undefined || note) && (
+          <NoteForm note={note} defaultProjectId={projectId} projects={projects} onSave={save} onCancel={onClose} onDelete={note ? remove : undefined} />
+        )}
       </div>
     </div>
   )

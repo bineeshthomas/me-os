@@ -6,7 +6,9 @@ export const api = Router();
 const PROJECTS_SQL = `
   SELECT p.*, COALESCE(
     json_agg(json_build_object('id', s.id, 'title', s.title, 'done', s.done, 'position', s.position, 'due_date', to_char(s.due_date, 'YYYY-MM-DD'))
-             ORDER BY s.position, s.id) FILTER (WHERE s.id IS NOT NULL), '[]') AS steps
+             ORDER BY s.position, s.id) FILTER (WHERE s.id IS NOT NULL), '[]') AS steps,
+    (SELECT COALESCE(json_agg(json_build_object('id', n.id, 'title', n.title, 'pinned', n.pinned, 'updated_at', n.updated_at)
+                              ORDER BY n.pinned DESC, n.updated_at DESC), '[]') FROM notes n WHERE n.project_id = p.id) AS notes
   FROM projects p LEFT JOIN project_steps s ON s.project_id = p.id`;
 
 const CATEGORIES = ["work", "personal"];
@@ -148,40 +150,78 @@ function cleanTags(input: unknown): string[] | undefined {
   return [...new Set(tags)].slice(0, 10);
 }
 
-api.get("/notes", async (_req, res) => {
-  const { rows } = await pool.query("SELECT * FROM notes ORDER BY pinned DESC, updated_at DESC");
+const NOTES_SQL = `
+  SELECT n.*, p.title AS project_title, p.category AS project_category
+  FROM notes n LEFT JOIN projects p ON p.id = n.project_id`;
+
+api.get("/notes", async (req, res) => {
+  const projectId = req.query.project_id === undefined ? null : Number(req.query.project_id);
+  const { rows } = await pool.query(
+    `${NOTES_SQL} WHERE ($1::int IS NULL OR n.project_id = $1) ORDER BY n.pinned DESC, n.updated_at DESC`,
+    [Number.isInteger(projectId) ? projectId : null],
+  );
   res.json(rows);
 });
+
+api.get("/notes/:id", async (req, res) => {
+  const { rows } = await pool.query(`${NOTES_SQL} WHERE n.id = $1`, [req.params.id]);
+  if (!rows[0]) return res.status(404).json({ error: "not found" });
+  res.json(rows[0]);
+});
+
+// A note's project link: null or a number. Anything else is rejected.
+const projectIdOrNull = (v: unknown): number | null | undefined => (v === null ? null : Number.isInteger(v) ? (v as number) : undefined);
+const isFkError = (e: unknown) => (e as { code?: string }).code === "23503";
 
 api.post("/notes", async (req, res) => {
   const { title, body } = req.body ?? {};
   if (!title) return res.status(400).json({ error: "title is required" });
-  const { rows } = await pool.query(
-    "INSERT INTO notes (title, body, tags, pinned) VALUES ($1, $2, $3, $4) RETURNING *",
-    [title, body ?? "", cleanTags(req.body?.tags) ?? [], req.body?.pinned === true],
-  );
-  res.status(201).json(rows[0]);
+  const projectId = projectIdOrNull(req.body?.project_id ?? null);
+  if (projectId === undefined) return res.status(400).json({ error: "project_id must be a project id or null" });
+  try {
+    const { rows } = await pool.query(
+      "INSERT INTO notes (title, body, tags, pinned, project_id) VALUES ($1, $2, $3, $4, $5) RETURNING id",
+      [title, body ?? "", cleanTags(req.body?.tags) ?? [], req.body?.pinned === true, projectId],
+    );
+    if (projectId) await pool.query("UPDATE projects SET updated_at = now() WHERE id = $1", [projectId]);
+    res.status(201).json((await pool.query(`${NOTES_SQL} WHERE n.id = $1`, [rows[0].id])).rows[0]);
+  } catch (e) {
+    if (isFkError(e)) return res.status(400).json({ error: "That project doesn't exist" });
+    throw e;
+  }
 });
 
 // `touch: false` saves without bumping "updated" (pinning, or ticking a checklist item, shouldn't reshuffle the list)
 api.patch("/notes/:id", async (req, res) => {
   const { title, body } = req.body ?? {};
   if (title !== undefined && !String(title).trim()) return res.status(400).json({ error: "title is required" });
-  const { rows } = await pool.query(
-    `UPDATE notes SET title = COALESCE($2, title), body = COALESCE($3, body), tags = COALESCE($4, tags),
-       pinned = COALESCE($5, pinned), updated_at = CASE WHEN $6::boolean THEN now() ELSE updated_at END
-     WHERE id = $1 RETURNING *`,
-    [
-      req.params.id,
-      title ?? null,
-      body ?? null,
-      cleanTags(req.body?.tags) ?? null,
-      typeof req.body?.pinned === "boolean" ? req.body.pinned : null,
-      req.body?.touch !== false,
-    ],
-  );
-  if (!rows[0]) return res.status(404).json({ error: "not found" });
-  res.json(rows[0]);
+  const hasProject = "project_id" in (req.body ?? {});
+  const projectId = projectIdOrNull(req.body?.project_id);
+  if (hasProject && projectId === undefined) return res.status(400).json({ error: "project_id must be a project id or null" });
+  try {
+    const { rows } = await pool.query(
+      `UPDATE notes SET title = COALESCE($2, title), body = COALESCE($3, body), tags = COALESCE($4, tags),
+         pinned = COALESCE($5, pinned), project_id = CASE WHEN $7::boolean THEN $8::int ELSE project_id END,
+         updated_at = CASE WHEN $6::boolean THEN now() ELSE updated_at END
+       WHERE id = $1 RETURNING id, project_id`,
+      [
+        req.params.id,
+        title ?? null,
+        body ?? null,
+        cleanTags(req.body?.tags) ?? null,
+        typeof req.body?.pinned === "boolean" ? req.body.pinned : null,
+        req.body?.touch !== false,
+        hasProject,
+        projectId ?? null,
+      ],
+    );
+    if (!rows[0]) return res.status(404).json({ error: "not found" });
+    if (rows[0].project_id && req.body?.touch !== false) await pool.query("UPDATE projects SET updated_at = now() WHERE id = $1", [rows[0].project_id]);
+    res.json((await pool.query(`${NOTES_SQL} WHERE n.id = $1`, [rows[0].id])).rows[0]);
+  } catch (e) {
+    if (isFkError(e)) return res.status(400).json({ error: "That project doesn't exist" });
+    throw e;
+  }
 });
 
 api.delete("/notes/:id", async (req, res) => {
