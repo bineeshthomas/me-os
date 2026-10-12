@@ -13,6 +13,7 @@ export type MessageApp = 'whatsapp' | 'teams'
 export interface Item { id: number; kind: Kind; title: string; due_at: string | null; done: boolean; completed_at: string | null; app: MessageApp | null }
 export interface SearchHit { type: 'project' | 'step' | 'note' | 'link' | Kind; id: number; title: string; snippet: string | null }
 export interface CalEvent { id: string; title: string; start: string; end: string; allDay: boolean; location: string | null }
+export interface PrivacySettings { weather: boolean; favicons: boolean }
 export interface CalendarStatus { connected: boolean; host?: string }
 export interface QuickLink { id: number; name: string; url: string }
 export interface Habit { id: number; name: string; icon: string; points: number; done: boolean; streak: number }
@@ -92,7 +93,9 @@ export const api = {
   setItemDone: (id: number, done: boolean) => req<Item>('PATCH', `/items/${id}`, { done }),
   deleteItem: (id: number) => req<void>('DELETE', `/items/${id}`),
   search: (q: string) => req<SearchHit[]>('GET', `/search?q=${encodeURIComponent(q)}`),
-  settings: () => req<{ calendar: CalendarStatus; stress: number }>('GET', '/settings'),
+  settings: () => req<{ calendar: CalendarStatus; stress: number; privacy: PrivacySettings }>('GET', '/settings'),
+  savePrivacy: (patch: Partial<PrivacySettings>) => req<PrivacySettings>('PUT', '/settings/privacy', patch),
+  eraseEverything: () => req<{ erased: boolean }>('POST', '/erase', { confirm: 'DELETE' }),
   saveStress: (level: number) => req<{ stress: number }>('PUT', '/settings/stress', { level }),
   saveCalendar: (url: string) => req<{ calendar: CalendarStatus }>('PUT', '/settings/calendar', { url }),
   removeCalendar: () => req<void>('DELETE', '/settings/calendar'),

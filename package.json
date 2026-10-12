@@ -1,11 +1,15 @@
 {
-  "name": "mydesktop",
+  "name": "me-os",
   "private": true,
   "scripts": {
-    "db:up": "docker compose up -d db",
+    "install:all": "npm --prefix server install && npm --prefix client install",
+    "db:up": "docker compose -f docker-compose.dev.yml up -d db",
     "migrate": "npm --prefix server run migrate",
     "dev:server": "npm --prefix server run dev",
     "dev:client": "npm --prefix client run dev",
-    "install:all": "npm --prefix server install && npm --prefix client install"
-  }
+    "build": "npm --prefix client run build && npm --prefix server run build",
+    "start": "npm --prefix server run migrate:prod && STATIC_DIR=../client/dist npm --prefix server run start"
+  },
+  "license": "MIT",
+  "description": "Me-OS: a simple operating system for a person. Your day, projects, notes and focus time, kept on your own computer."
 }

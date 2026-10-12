@@ -10,9 +10,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'favicon.ico', 'apple-touch-icon-180x180.png'],
       manifest: {
-        name: 'Main Deck',
-        short_name: 'Main Deck',
-        description: 'Personal control surface for my day, projects and notes',
+        name: 'Me-OS',
+        short_name: 'Me-OS',
+        description: 'A simple operating system for a person',
         theme_color: '#a8d5ba',
         background_color: '#faf8f3',
         display: 'standalone',
@@ -39,6 +39,6 @@ export default defineConfig({
     }),
   ],
   server: {
-    proxy: { '/api': 'http://127.0.0.1:4000' },
+    proxy: { '/api': process.env.API_URL ?? 'http://127.0.0.1:4000' },
   },
 })

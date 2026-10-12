@@ -318,6 +318,7 @@ api.get("/settings", async (_req, res) => {
   res.json({
     calendar: url ? { connected: true, host: new URL(url).host } : { connected: false },
     stress: rows[0] ? Number(rows[0].value) : 20,
+    privacy: await getPrivacy(),
   });
 });
 
@@ -415,3 +416,6 @@ api.use(review);
 
 import { focus } from "./focus.js";
 api.use(focus);
+
+import { getPrivacy, privacy } from "./privacy.js";
+api.use(privacy);

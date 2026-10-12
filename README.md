@@ -1,55 +1,89 @@
-# MyDesktop
+# Me-OS
 
-A web app to manage my day and activities.
+**A simple operating system for a person.** One calm place for your day: what to do, what you're working on, what you
+noticed, and how it went. It runs on your own computer, and your data stays there.
 
-## Stack
-- **client/** React + TypeScript (Vite)
-- **server/** Node + Express + TypeScript (API layer)
-- **PostgreSQL** database (via Docker Compose)
+## What it does
 
-## Getting started
+- **Dashboard**: your day at a glance, with a 7-night review strip, a focus timer and today's top priorities.
+- **Tasks column**: Focus tasks, calls, emails, messages (WhatsApp or Teams), meetings and reminders, always beside you.
+- **Projects**: compact cards with steps you can drag into order, due dates, a Work or Personal type, and notes.
+- **Notes**: markdown with tickable checklists, `#tags`, pinning, search, and links to projects.
+- **Daily Review**: a short nightly ritual: check-ins with streaks, wins, goals moved forward in tiny steps, reflection,
+  tomorrow's top 3, and a brain dump. Plus a **History** page with a heatmap of rating, energy and stress.
+- **Focus timer and Activity log**: start a timer on one thing and stop when you're done. Keeps a paged log.
+- **Calendar**: a month view with your due items, project deadlines and (optionally) your Outlook meetings.
+- **Links**: quick-launch links to the sites you use every day.
+- **Works offline** as an installable app (PWA), and on phones.
+
+## Your data stays with you
+
+- No accounts, no analytics, no tracking. Nothing is sent to the author.
+- Everything is saved in a PostgreSQL database **on your computer**.
+- The app only answers on `localhost`. It refuses requests from other machines and from other websites.
+- Two optional features talk to the internet, and both are **off until you switch them on** in *Settings → Privacy*:
+  - **Weather** sends the city you type, and its map position, to [open-meteo.com](https://open-meteo.com).
+  - **Website icons** load each saved link's own `favicon.ico`, straight from that site.
+- If you connect an Outlook calendar (optional), your computer fetches the calendar link you give it directly.
+  The link is never shown again and is never included in an export.
+- *Settings → Privacy* lets you **export everything as JSON** and **erase everything** in one step.
+
+You don't have to take this on trust: the code is open (MIT), and you can watch the browser's Network tab while you use it.
+
+## Quick start with Docker
+
+You need [Docker](https://www.docker.com/products/docker-desktop/). Then:
+
 ```sh
-npm run install:all
-npm run db:up        # start Postgres (requires Docker)
-npm run migrate      # create tables
-npm run dev:server   # API on http://localhost:4000
-npm run dev:client   # UI on http://localhost:5173 (proxies /api to the API)
+git clone <this repository>
+cd <this repository>
+docker compose up -d
 ```
 
-Copy `server/.env.example` to `server/.env` if it doesn't exist.
+Open **http://localhost:4000**. That's it. Your data lives in a Docker volume on your computer.
 
-## Features
-- **Sidebar** - collapse it to an icon rail with the « button or Ctrl/Cmd+B (remembered; phones keep the bottom tab bar)
-- **Dashboard** - a 7-day daily-review band with your night streak, counts, active project progress, recent notes
-- **Projects** - compact cards, most recently created/updated first; each is Work (default) or Personal (pink badge); click one to edit its title, description, type, due date and steps (drag the ⋮⋮ handle, or use the arrow keys, to reorder steps; each step can have a due date)
-- **Project notes** - add notes from inside a project (title list in the project editor; click a title to read or edit it). Every note also appears on the Notes page with a link back to its project, and any note can be linked to a project from the Notes page. Deleting a project keeps its notes
-- **Notes** - markdown notes with checklists (tick items right on the card), `#tags` with filtering and search, and pin-to-top
-- **Daily Review** - nightly page (every section collapses; the choice is remembered) (top 3 for tomorrow also show on the dashboard): one-tap check-ins with streaks (worked out, read...), wins, unfinished items (shown read-only; dated ones roll over to the next day when you finish the review), long-term goals advanced by tiny point steps, reflection, top 3 for tomorrow, brain dump, ratings, and a 7-day summary
-- **Review History** (button on the Daily Review page) - browse past reviews with a month heatmap of day rating, energy or stress, month stats, weekday patterns across all your reviews, and a detail view per day
-- **Focus timer** - type an activity and start the timer; it keeps running (even across reloads) until you stop it. A card on the dashboard, a running-timer pill in the header on every page, and an **Activity** page with a paged log (rename, delete, totals for today and this week)
-- **Links** - save quick-launch links with a name; they open in a new tab (http/https only)
-- **Work column** (left, right after the menu) - Focus Tasks, Calls, Emails, Messages (pick WhatsApp or Teams), Meetings, Reminders (add, tick off, delete; meetings and reminders take a date and time)
-- **Completed items** stay on their card, crossed out, until the end of the day they were ticked, then drop off (they stay in the database)
-- **Footer** - a rotating quote and a 🌿-to-⚡ stress meter (0-100, saved in the database)
-- **Search** - Ctrl/Cmd+K searches projects, steps, notes and widget items
-- **Settings** - connect an Outlook calendar by pasting its published ICS link (stored server-side, never sent back to the browser)
-- **Calendar** - click the date/time in the header for a month view with items due each day, Outlook meetings, and project/step deadlines
-- **Overnight rollover** - unfinished dated reminders move to the next day automatically (at startup and every 10 minutes, so it catches up after the laptop was asleep)
-- **Header** - weather (Open-Meteo, click to change city; default New Delhi) plus date and time
+- Stop it: `docker compose down` (your data is kept). Delete it with `docker compose down -v`.
+- Optional: copy `.env.example` to `.env` and set your own `POSTGRES_PASSWORD` before the first start.
+- Back up: `docker compose exec db pg_dump -U meos meos > me-os-backup.sql`, or use *Settings → Export everything*.
 
-## Progressive web app
-The client is an installable PWA (manifest, icons, service worker). Build it with `npm --prefix client run build`, serve it with `npx --prefix client vite preview`, then use your browser's Install option. The app shell works offline, and the last-loaded data is shown when the API is unreachable. Edits need a connection. Regenerate icons from `client/public/favicon.svg` with `npx pwa-assets-generator` in `client/`.
+## Quick start without Docker
 
-## API
-- `GET /api/dashboard`
-- `GET|POST /api/projects`, `PATCH|DELETE /api/projects/:id`, `PUT /api/projects/:id/steps/order`, `GET /api/deadlines?from=&to=`
-- `POST /api/projects/:id/steps`, `PATCH|DELETE /api/steps/:id`
-- `GET|POST /api/items`, `PATCH|DELETE /api/items/:id`
-- `GET /api/settings`, `PUT /api/settings/calendar`, `PUT /api/settings/stress`
-- `GET /api/search?q=`
-- `GET /api/review-history?month=YYYY-MM`
-- `GET|PUT /api/review/:date`, `PUT /api/review/:date/habits/:id`, `GET /api/review-summary/:date`, `GET /api/focus`
-- `GET|POST /api/habits`, `GET|POST /api/goals`, `POST /api/goals/:id/entries`
-- `GET /api/focus/status`, `POST /api/focus/start|stop`, `GET /api/focus/sessions?page=&page_size=`, `PATCH|DELETE /api/focus/sessions/:id`
-- `GET|POST /api/links`, `PATCH|DELETE /api/links/:id`
-- `GET /api/notes[?project_id=]`, `GET|PATCH|DELETE /api/notes/:id`, `POST /api/notes` (notes take an optional `project_id`)
+You need Node 20 or newer and PostgreSQL 14 or newer.
+
+```sh
+createdb meos                      # or any database name you like
+cp server/.env.example server/.env # then edit DATABASE_URL to match your database
+npm run install:all
+npm run build
+npm start                          # migrates the database, then serves the app
+```
+
+Open **http://localhost:4000**.
+
+## Development
+
+```sh
+npm run install:all
+npm run db:up        # a development Postgres in Docker (or point server/.env at your own)
+npm run migrate
+npm run dev:server   # API on http://127.0.0.1:4000
+npm run dev:client   # app on http://localhost:5173, proxying /api to the API
+```
+
+The client is React + TypeScript (Vite). The server is Node + Express + TypeScript on PostgreSQL.
+See [docs/API.md](docs/API.md) for the endpoints.
+
+## Security model
+
+Me-OS is for **one person on their own computer**. It deliberately has no login. Please don't put it on the public
+internet or a shared server. See [SECURITY.md](SECURITY.md).
+
+## Known limits
+
+- One user, one computer. There is no sync between devices.
+- No import yet (there is an export).
+- The Docker setup is new. If something doesn't work, please open an issue.
+
+## Licence
+
+[MIT](LICENSE). Contributions are welcome: see [CONTRIBUTING.md](CONTRIBUTING.md).

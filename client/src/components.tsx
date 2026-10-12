@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { usePrivacy } from './privacy'
 import { api, type CalEvent, type Deadline, type Item, type Kind, type MessageApp, type SearchHit } from './api'
 
 const WIDGETS: { kind: Kind; label: string; icon: string; empty: string; timed: boolean; apps?: boolean }[] = [
@@ -180,6 +181,11 @@ const WMO: [number, string][] = [[0, '☀️'], [3, '⛅'], [48, '🌫️'], [67
 const icon = (code: number) => (WMO.find(([max]) => code <= max) ?? [0, '🌡️'])[1]
 
 export function Weather() {
+  const privacy = usePrivacy()
+  return privacy?.weather ? <WeatherChip /> : null
+}
+
+function WeatherChip() {
   const [city, setCity] = useState(() => { try { return localStorage.getItem('city') ?? 'New Delhi' } catch { return 'New Delhi' } })
   const [text, setText] = useState('…')
 

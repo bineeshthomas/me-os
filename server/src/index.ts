@@ -1,3 +1,4 @@
+import path from "node:path";
 import express from "express";
 import { api } from "./routes.js";
 import { startRollover } from "./rollover.js";
@@ -20,6 +21,13 @@ app.use((req, res, next) => {
 app.use(express.json());
 app.get("/api/health", (_req, res) => res.json({ ok: true }));
 app.use("/api", api);
+
+// In a container (or any "production" run) this one process also serves the built app, so there is nothing else to start
+const staticDir = process.env.STATIC_DIR ? path.resolve(process.env.STATIC_DIR) : null;
+if (staticDir) {
+  app.use(express.static(staticDir));
+  app.get("/{*path}", (_req, res) => res.sendFile(path.join(staticDir, "index.html")));
+}
 
 const port = Number(process.env.PORT ?? 4000);
 const bindTo = process.env.HOST ?? "127.0.0.1";

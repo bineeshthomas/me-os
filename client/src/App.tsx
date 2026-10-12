@@ -18,7 +18,7 @@ interface Page {
 }
 
 const PAGES: Record<string, Page> = {
-  home: { label: 'Home', icon: '🏠', title: 'Dashboard ⚓', subtitle: 'Personal Control Surface', view: Dashboard },
+  home: { label: 'Home', icon: '🏠', title: 'Dashboard 🧭', subtitle: 'Your day at a glance', view: Dashboard },
   projects: { label: 'Projects', icon: '📋', title: 'Projects 📋', subtitle: 'Structured Goals & Milestones', view: Projects },
   notes: { label: 'Notes', icon: '📝', title: 'Notes 📝', subtitle: 'Instant Context & Ideas', view: Notes },
   review: { label: 'Daily Review', icon: '🌙', title: 'Daily Review 🌙', subtitle: 'Close the day, plan tomorrow', view: DailyReview },
@@ -83,8 +83,12 @@ export default function App() {
     <div className={collapsed ? 'app collapsed' : 'app'}>
       <nav>
         <div className="brand">
-          <div className="logo">⚓</div>
-          <b>Main Deck</b>
+          <div className="logo" aria-hidden>
+            <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="#2f5d46" strokeWidth="2.3" strokeLinecap="round">
+              <path d="M7.2 6.6a7.2 7.2 0 1 0 9.6 0" /><path d="M12 3.2v8.3" />
+            </svg>
+          </div>
+          <b>Me-OS</b>
         </div>
         <button className="navtoggle" onClick={toggleNav} aria-expanded={!collapsed} aria-label={collapsed ? 'Expand menu' : 'Collapse menu'}
           title={`${collapsed ? 'Expand' : 'Collapse'} menu (Ctrl+B)`}>{collapsed ? '»' : '«'}</button>

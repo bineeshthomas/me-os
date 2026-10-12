@@ -1,11 +1,26 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { api, type QuickLink } from '../api'
+import { usePrivacy } from '../privacy'
 
 const host = (url: string) => {
   try { return new URL(url).hostname.replace(/^www\./, '') } catch { return url }
 }
 
+// A coloured letter, always available and never contacts anyone
+function LetterIcon({ name }: { name: string }) {
+  const hue = [...name].reduce((a, c) => (a * 31 + c.charCodeAt(0)) % 360, 7)
+  return <span className="lettericon" style={{ background: `hsl(${hue} 55% 82%)`, color: `hsl(${hue} 45% 28%)` }} aria-hidden>{(name.trim()[0] ?? '?').toUpperCase()}</span>
+}
+
+// The site's own icon, only if the owner has allowed it in Settings; falls back to the letter if the site has none
+function SiteIcon({ link, allow }: { link: QuickLink; allow: boolean }) {
+  const [failed, setFailed] = useState(false)
+  if (!allow || failed) return <LetterIcon name={link.name} />
+  return <img src={`${new URL(link.url).origin}/favicon.ico`} alt="" width={22} height={22} onError={() => setFailed(true)} referrerPolicy="no-referrer" />
+}
+
 export default function Links() {
+  const privacy = usePrivacy()
   const [links, setLinks] = useState<QuickLink[]>([])
   const [editing, setEditing] = useState<number | null>(null)
   const [name, setName] = useState('')
@@ -55,7 +70,7 @@ export default function Links() {
         {links.map((l) => (
           <div key={l.id} className="card linkcard">
             <a href={l.url} target="_blank" rel="noopener noreferrer">
-              <img src={`https://www.google.com/s2/favicons?domain=${host(l.url)}&sz=32`} alt="" width={20} height={20} />
+              <SiteIcon link={l} allow={!!privacy?.favicons} />
               <span><b>{l.name}</b><small>{host(l.url)}</small></span>
             </a>
             <div className="actions">
