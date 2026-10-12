@@ -682,3 +682,16 @@ header { container: hdr / inline-size; }
 @media (max-width: 700px) { .prow { align-items: flex-start; } }
 
 .privacy .sub { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line); }
+
+/* Desktop: the tasks column always fits the window and scrolls on its own, independently of the page content.
+   (When stacked on tablets and phones it stays in the normal page flow.) */
+@media (min-width: 1101px) {
+  .rail {
+    position: sticky; top: 0; align-self: flex-start;
+    height: calc(100vh - 36px); /* 36px = the footer bar */
+    overflow-y: auto; overscroll-behavior: contain;
+    scrollbar-width: thin; scrollbar-color: #c9d8cf transparent;
+  }
+  .rail::-webkit-scrollbar { width: 8px; }
+  .rail::-webkit-scrollbar-thumb { background: #c9d8cf; border-radius: 99px; }
+}
