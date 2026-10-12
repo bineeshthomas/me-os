@@ -3,6 +3,9 @@
 **A simple operating system for a person.** One calm place for your day: what to do, what you're working on, what you
 noticed, and how it went. It runs on your own computer, and your data stays there.
 
+
+![Me-OS dashboard: tasks and reminders on the left, a focus timer, a six-night review streak and today's top three priorities](docs/screenshots/dashboard.png)
+
 ## What it does
 
 - **Dashboard**: your day at a glance, with a 7-night review strip, a focus timer and today's top priorities.
@@ -15,6 +18,21 @@ noticed, and how it went. It runs on your own computer, and your data stays ther
 - **Calendar**: a month view with your due items, project deadlines and (optionally) your Outlook meetings.
 - **Links**: quick-launch links to the sites you use every day.
 - **Works offline** as an installable app (PWA), and on phones.
+
+## Screenshots
+
+*All screenshots use invented demo data.*
+
+| | |
+|---|---|
+| [![Projects](docs/screenshots/projects.png)](docs/screenshots/projects.png)<br>**Projects**: compact cards with progress, due dates and a pink badge for personal projects. | [![A project open in the editor](docs/screenshots/project-editor.png)](docs/screenshots/project-editor.png)<br>**Project editor**: reorderable steps with due dates, plus the notes that belong to the project. |
+| [![Notes](docs/screenshots/notes.png)](docs/screenshots/notes.png)<br>**Notes**: markdown with tickable checklists, tags, pinning and links back to projects. | [![Daily Review](docs/screenshots/daily-review.png)](docs/screenshots/daily-review.png)<br>**Daily Review**: check-ins with streaks, wins, what's unfinished, and goals moved forward in tiny steps. |
+| [![Review History](docs/screenshots/history.png)](docs/screenshots/history.png)<br>**Review History**: a month heatmap of rating, energy or stress, with weekday patterns. | [![Privacy settings](docs/screenshots/privacy.png)](docs/screenshots/privacy.png)<br>**Privacy**: optional internet features are off until you switch them on, and you can export or erase everything. |
+
+<p align="center">
+  <img src="docs/screenshots/mobile.png" alt="Me-OS on a phone" width="260"><br>
+  <em>It works on a phone too, as an installable app.</em>
+</p>
 
 ## Your data stays with you
 
