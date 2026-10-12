@@ -14,3 +14,6 @@ The app's own HTTP API (served on localhost only). Paths are relative to `/api`.
 - `GET /api/focus/status`, `POST /api/focus/start|stop`, `GET /api/focus/sessions?page=&page_size=`, `PATCH|DELETE /api/focus/sessions/:id`
 - `GET|POST /api/links`, `PATCH|DELETE /api/links/:id`
 - `GET /api/notes[?project_id=]`, `GET|PATCH|DELETE /api/notes/:id`, `POST /api/notes` (notes take an optional `project_id`)
+- `GET /api/settings` (calendar status, stress level, privacy switches), `PUT /api/settings/privacy` (`{weather?, favicons?}`)
+- `GET /api/export` (everything as a JSON download; the Outlook link is left out)
+- `POST /api/erase` (`{"confirm":"DELETE"}`: permanently deletes all data)

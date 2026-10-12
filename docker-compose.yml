@@ -1,14 +1,36 @@
+# Run all of Me-OS with one command:   docker compose up -d
+# Then open http://localhost:4000   (it answers on this computer only)
+#
+# Your data lives in the "pgdata" Docker volume on this computer. `docker compose down` keeps it;
+# `docker compose down -v` deletes it.
+
 services:
   db:
-    image: postgres:16
+    image: postgres:16-alpine
+    restart: unless-stopped
     environment:
-      POSTGRES_USER: mydesktop
-      POSTGRES_PASSWORD: mydesktop
-      POSTGRES_DB: mydesktop
-    ports:
-      - "127.0.0.1:5432:5432"
+      POSTGRES_USER: meos
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-meos-local-only}
+      POSTGRES_DB: meos
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U meos -d meos"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    # Deliberately NOT published to any port: only the app container can reach the database.
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://meos:${POSTGRES_PASSWORD:-meos-local-only}@db:5432/meos
+    ports:
+      - "127.0.0.1:4000:4000" # 127.0.0.1 = reachable from this computer only, never from the network
 
 volumes:
   pgdata:

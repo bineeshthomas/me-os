@@ -1,0 +1,15 @@
+# For development only: just the database, published to this computer (127.0.0.1) so `npm run dev:server` can reach it.
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: meos
+      POSTGRES_PASSWORD: meos
+      POSTGRES_DB: meos
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pgdata-dev:/var/lib/postgresql/data
+
+volumes:
+  pgdata-dev:
