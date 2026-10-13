@@ -419,3 +419,6 @@ api.use(focus);
 
 import { getPrivacy, privacy } from "./privacy.js";
 api.use(privacy);
+
+import { summary } from "./summary.js";
+api.use(summary);

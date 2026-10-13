@@ -9,6 +9,7 @@ noticed, and how it went. It runs on your own computer, and your data stays ther
 ## What it does
 
 - **Dashboard**: your day at a glance, with a 7-night review strip, a focus timer and today's top priorities.
+- **Today's summary**: one click copies a short plain-text briefing (top 3, meetings, deadlines, reminders, tasks, calls, messages, check-ins) to paste into your phone's notes or a chat.
 - **Tasks column**: Focus tasks, calls, emails, messages (WhatsApp or Teams), meetings and reminders, always beside you.
 - **Projects**: compact cards with steps you can drag into order, due dates, a Work or Personal type, and notes.
 - **Notes**: markdown with tickable checklists, `#tags`, pinning, search, and links to projects.

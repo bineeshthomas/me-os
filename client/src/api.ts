@@ -119,6 +119,8 @@ export const api = {
   addGoalEntry: (id: number, date: string, points: number, note: string) =>
     req<{ achieved: boolean }>('POST', `/goals/${id}/entries`, { date, points, note }),
   deleteGoalEntry: (id: number) => req<void>('DELETE', `/goal-entries/${id}`),
+  todaySummary: (tz: string, h12: boolean) =>
+    req<{ date: string; text: string; sections: number }>('GET', `/summary/today?tz=${encodeURIComponent(tz)}&h12=${h12 ? 1 : 0}`),
   focusStatus: () => req<FocusStatus>('GET', '/focus/status'),
   focusStart: (activity: string) => req<FocusRunning>('POST', '/focus/start', { activity }),
   focusStop: () => req<FocusSession>('POST', '/focus/stop'),

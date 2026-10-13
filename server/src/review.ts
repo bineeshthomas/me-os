@@ -9,7 +9,7 @@ const isDate = (s: unknown): s is string => typeof s === "string" && DATE_RE.tes
 const shift = (date: string, days: number) => new Date(Date.parse(`${date}T00:00:00Z`) + days * 86_400_000).toISOString().slice(0, 10);
 
 // Consecutive days ending on `today` (or yesterday, if today isn't done yet)
-function streak(dates: string[], today: string): number {
+export function streak(dates: string[], today: string): number {
   const set = new Set(dates);
   let day = set.has(today) ? today : shift(today, -1);
   let n = 0;

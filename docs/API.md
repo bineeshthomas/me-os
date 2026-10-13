@@ -17,3 +17,4 @@ The app's own HTTP API (served on localhost only). Paths are relative to `/api`.
 - `GET /api/settings` (calendar status, stress level, privacy switches), `PUT /api/settings/privacy` (`{weather?, favicons?}`)
 - `GET /api/export` (everything as a JSON download; the Outlook link is left out)
 - `POST /api/erase` (`{"confirm":"DELETE"}`: permanently deletes all data)
+- `GET /api/summary/today?tz=<IANA zone>&h12=<0|1>` (a plain-text briefing for today, in the caller's time zone)

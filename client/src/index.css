@@ -695,3 +695,13 @@ header { container: hdr / inline-size; }
   .rail::-webkit-scrollbar { width: 8px; }
   .rail::-webkit-scrollbar-thumb { background: #c9d8cf; border-radius: 99px; }
 }
+
+/* Today's summary card */
+.sumcard { border-color: #f0dfa8; background: linear-gradient(180deg, #fffdf3, #fff 70%); padding-bottom: 10px; }
+.sumrow { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.sumtitle { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.sumbtns { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.sumstatus { margin: 0; min-height: 0; font-size: 12px; color: var(--mint-dark); }
+.sumstatus:empty { display: none; }
+.sumstatus + .sumtext, .sumrow + .sumtext { margin-top: 8px; }
+.sumtext { margin: 8px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; font: 13px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; max-height: 340px; overflow: auto; user-select: text; }
