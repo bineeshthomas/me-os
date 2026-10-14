@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { api, type Category, type Note, type NoteDraft, type Project, type Step } from '../api'
-import NoteForm from '../NoteForm'
+import { api, type Category, type Project, type Step } from '../api'
+import NoteDialog from '../NoteDialog'
 
 const fmtDate = (iso: string) => new Date(iso).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' })
 
@@ -264,56 +264,7 @@ function ProjectDetail({ project: p, projects, run, onClose }: { project: Projec
           <button className="ghost" onClick={() => confirm(`Delete "${p.title}"?${p.notes.length ? ` Its ${p.notes.length} note${p.notes.length === 1 ? '' : 's'} will be kept on the Notes page.` : ''}`) && run(api.deleteProject(p.id)).then(onClose)}>Delete project</button>
         </div>
       </div>
-      {noteDlg && <NoteDialog noteId={noteDlg.id} projectId={p.id} projects={projects} onClose={() => setNoteDlg(null)} onChanged={() => run(Promise.resolve())} />}
-    </div>
-  )
-}
-
-// Read or edit one note without leaving the project (opens in edit mode; Preview tab for reading)
-function NoteDialog({ noteId, projectId, projects, onClose, onChanged }: {
-  noteId?: number; projectId: number; projects: Project[]; onClose: () => void; onChanged: () => Promise<void>
-}) {
-  const [note, setNote] = useState<Note | null>(null)
-  const [loading, setLoading] = useState(noteId !== undefined)
-  const [error, setError] = useState('')
-
-  useEffect(() => {
-    if (noteId === undefined) return
-    api.note(noteId).then(setNote).catch((e) => setError(e.message)).finally(() => setLoading(false))
-  }, [noteId])
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [onClose])
-
-  const save = async (draft: NoteDraft) => {
-    if (noteId === undefined) await api.createNote(draft)
-    else await api.updateNote(noteId, draft)
-    await onChanged()
-    onClose()
-  }
-  const remove = async () => {
-    if (!note || !confirm(`Delete "${note.title}"?`)) return
-    await api.deleteNote(note.id).catch((e) => setError(e.message))
-    await onChanged()
-    onClose()
-  }
-
-  const linked = projects.find((x) => x.id === (note ? note.project_id : projectId))
-  return (
-    <div className="overlay top" onClick={onClose}>
-      <div className="card notedlg" role="dialog" aria-label={noteId === undefined ? 'New note' : 'Edit note'} onClick={(e) => e.stopPropagation()}>
-        <div className="head">
-          <h3>{noteId === undefined ? '📝 New note' : '📝 Note'}{linked && <small className="muted"> · {linked.category === 'personal' ? '🏠' : '📋'} {linked.title}</small>}</h3>
-          <button className="ghost" aria-label="Close" onClick={onClose}>✕</button>
-        </div>
-        {error && <p className="error">{error}</p>}
-        {loading ? <p className="empty">Loading…</p> : (noteId === undefined || note) && (
-          <NoteForm note={note} defaultProjectId={projectId} projects={projects} onSave={save} onCancel={onClose} onDelete={note ? remove : undefined} />
-        )}
-      </div>
+      {noteDlg && <NoteDialog noteId={noteDlg.id} defaultProjectId={p.id} projects={projects} onClose={() => setNoteDlg(null)} onChanged={() => run(Promise.resolve())} />}
     </div>
   )
 }

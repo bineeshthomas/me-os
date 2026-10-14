@@ -1,5 +1,5 @@
 import { useId, useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
-import type { Note, NoteDraft, Project } from './api'
+import type { MeetingRef, Note, NoteDraft, Project } from './api'
 import { renderMarkdown } from './markdown'
 
 export function Markdown({ source, onToggleTask }: { source: string; onToggleTask?: (index: number) => void }) {
@@ -40,6 +40,7 @@ export function ProjectSelect({ value, onChange, projects }: { value: number | n
 interface Props {
   note?: Note | null
   defaultProjectId?: number | null // pre-select a project when creating from one
+  defaultMeeting?: MeetingRef | null // link a new note to a meeting when creating from one
   projects: Project[]
   tagSuggestions?: string[]
   onSave: (draft: NoteDraft) => Promise<void>
@@ -48,7 +49,7 @@ interface Props {
 }
 
 // The note editor, shared by the Notes page and the project's note dialog
-export default function NoteForm({ note, defaultProjectId = null, projects, tagSuggestions = [], onSave, onCancel, onDelete }: Props) {
+export default function NoteForm({ note, defaultProjectId = null, defaultMeeting = null, projects, tagSuggestions = [], onSave, onCancel, onDelete }: Props) {
   const listId = useId()
   const [title, setTitle] = useState(note?.title ?? '')
   const [body, setBody] = useState(note?.body ?? '')
@@ -56,6 +57,9 @@ export default function NoteForm({ note, defaultProjectId = null, projects, tagS
   const [tagInput, setTagInput] = useState('')
   const [pinned, setPinned] = useState(note?.pinned ?? false)
   const [projectId, setProjectId] = useState<number | null>(note ? note.project_id : defaultProjectId)
+  const [meeting, setMeeting] = useState<MeetingRef | null>(
+    note ? (note.meeting_key ? { key: note.meeting_key, title: note.meeting_title ?? 'Meeting', start: note.meeting_start } : null) : defaultMeeting,
+  )
   const [preview, setPreview] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -102,7 +106,7 @@ export default function NoteForm({ note, defaultProjectId = null, projects, tagS
     e.preventDefault()
     setBusy(true); setError('')
     const pending = tagInput.split(',').map((t) => t.trim()).filter(Boolean)
-    try { await onSave({ title: title.trim(), body, tags: [...tags, ...pending], pinned, project_id: projectId }) }
+    try { await onSave({ title: title.trim(), body, tags: [...tags, ...pending], pinned, project_id: projectId, meeting }) }
     catch (err) { setError((err as Error).message) }
     setBusy(false)
   }
@@ -110,6 +114,13 @@ export default function NoteForm({ note, defaultProjectId = null, projects, tagS
   return (
     <form className="noteform" onSubmit={submit}>
       <input className="nf-title" required autoFocus={!note} placeholder="Note title" value={title} onChange={(e) => setTitle(e.target.value)} aria-label="Note title" />
+
+      {meeting && (
+        <div className="nf-meeting">
+          <span>📅 <b>{meeting.title}</b>{meeting.start && <small> · {new Date(meeting.start).toLocaleString([], { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</small>}</span>
+          <button type="button" className="ghost" onClick={() => setMeeting(null)} title="Remove the link to this meeting">Unlink</button>
+        </div>
+      )}
 
       <div className="nf-meta">
         <label>

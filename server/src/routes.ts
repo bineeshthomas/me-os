@@ -154,11 +154,15 @@ const NOTES_SQL = `
   SELECT n.*, p.title AS project_title, p.category AS project_category
   FROM notes n LEFT JOIN projects p ON p.id = n.project_id`;
 
+// ?project_id=N  notes of one project   |   ?meeting=1  only notes that belong to a meeting   |   ?meeting_key=K  one meeting's notes
 api.get("/notes", async (req, res) => {
   const projectId = req.query.project_id === undefined ? null : Number(req.query.project_id);
+  const meetingKey = typeof req.query.meeting_key === "string" ? req.query.meeting_key : null;
   const { rows } = await pool.query(
-    `${NOTES_SQL} WHERE ($1::int IS NULL OR n.project_id = $1) ORDER BY n.pinned DESC, n.updated_at DESC`,
-    [Number.isInteger(projectId) ? projectId : null],
+    `${NOTES_SQL} WHERE ($1::int IS NULL OR n.project_id = $1)
+       AND ($2::boolean IS NOT TRUE OR n.meeting_key IS NOT NULL) AND ($3::text IS NULL OR n.meeting_key = $3)
+     ORDER BY n.pinned DESC, n.updated_at DESC`,
+    [Number.isInteger(projectId) ? projectId : null, req.query.meeting === "1", meetingKey],
   );
   res.json(rows);
 });
@@ -173,15 +177,32 @@ api.get("/notes/:id", async (req, res) => {
 const projectIdOrNull = (v: unknown): number | null | undefined => (v === null ? null : Number.isInteger(v) ? (v as number) : undefined);
 const isFkError = (e: unknown) => (e as { code?: string }).code === "23503";
 
+// A note's meeting link: null, or { key, title, start }. Anything else is rejected (undefined).
+type MeetingLink = { key: string; title: string; start: string | null };
+function meetingOrNull(v: unknown): MeetingLink | null | undefined {
+  if (v === null) return null;
+  if (typeof v !== "object" || v === undefined) return undefined;
+  const m = v as Record<string, unknown>;
+  const key = typeof m.key === "string" ? m.key.trim() : "";
+  const title = typeof m.title === "string" ? m.title.trim() : "";
+  if (!key || key.length > 300 || !title || title.length > 300) return undefined;
+  if (m.start === null || m.start === undefined) return { key, title, start: null };
+  if (typeof m.start !== "string" || Number.isNaN(Date.parse(m.start))) return undefined;
+  return { key, title, start: new Date(m.start).toISOString() };
+}
+
 api.post("/notes", async (req, res) => {
   const { title, body } = req.body ?? {};
   if (!title) return res.status(400).json({ error: "title is required" });
   const projectId = projectIdOrNull(req.body?.project_id ?? null);
   if (projectId === undefined) return res.status(400).json({ error: "project_id must be a project id or null" });
+  const meeting = meetingOrNull(req.body?.meeting ?? null);
+  if (meeting === undefined) return res.status(400).json({ error: "meeting must be { key, title, start } or null" });
   try {
     const { rows } = await pool.query(
-      "INSERT INTO notes (title, body, tags, pinned, project_id) VALUES ($1, $2, $3, $4, $5) RETURNING id",
-      [title, body ?? "", cleanTags(req.body?.tags) ?? [], req.body?.pinned === true, projectId],
+      `INSERT INTO notes (title, body, tags, pinned, project_id, meeting_key, meeting_title, meeting_start)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
+      [title, body ?? "", cleanTags(req.body?.tags) ?? [], req.body?.pinned === true, projectId, meeting?.key ?? null, meeting?.title ?? null, meeting?.start ?? null],
     );
     if (projectId) await pool.query("UPDATE projects SET updated_at = now() WHERE id = $1", [projectId]);
     res.status(201).json((await pool.query(`${NOTES_SQL} WHERE n.id = $1`, [rows[0].id])).rows[0]);
@@ -198,10 +219,16 @@ api.patch("/notes/:id", async (req, res) => {
   const hasProject = "project_id" in (req.body ?? {});
   const projectId = projectIdOrNull(req.body?.project_id);
   if (hasProject && projectId === undefined) return res.status(400).json({ error: "project_id must be a project id or null" });
+  const hasMeeting = "meeting" in (req.body ?? {});
+  const meeting = meetingOrNull(req.body?.meeting);
+  if (hasMeeting && meeting === undefined) return res.status(400).json({ error: "meeting must be { key, title, start } or null" });
   try {
     const { rows } = await pool.query(
       `UPDATE notes SET title = COALESCE($2, title), body = COALESCE($3, body), tags = COALESCE($4, tags),
          pinned = COALESCE($5, pinned), project_id = CASE WHEN $7::boolean THEN $8::int ELSE project_id END,
+         meeting_key = CASE WHEN $9::boolean THEN $10 ELSE meeting_key END,
+         meeting_title = CASE WHEN $9::boolean THEN $11 ELSE meeting_title END,
+         meeting_start = CASE WHEN $9::boolean THEN $12::timestamptz ELSE meeting_start END,
          updated_at = CASE WHEN $6::boolean THEN now() ELSE updated_at END
        WHERE id = $1 RETURNING id, project_id`,
       [
@@ -213,6 +240,10 @@ api.patch("/notes/:id", async (req, res) => {
         req.body?.touch !== false,
         hasProject,
         projectId ?? null,
+        hasMeeting,
+        meeting?.key ?? null,
+        meeting?.title ?? null,
+        meeting?.start ?? null,
       ],
     );
     if (!rows[0]) return res.status(404).json({ error: "not found" });
@@ -298,7 +329,7 @@ api.get("/search", async (req, res) => {
      UNION ALL
      SELECT 'step', project_id, title, NULL FROM project_steps WHERE title ILIKE $1
      UNION ALL
-     SELECT 'note', id, title, LEFT(body, 120) FROM notes WHERE title ILIKE $1 OR body ILIKE $1 OR array_to_string(tags, ' ') ILIKE $1
+     SELECT 'note', id, title, LEFT(body, 120) FROM notes WHERE title ILIKE $1 OR body ILIKE $1 OR array_to_string(tags, ' ') ILIKE $1 OR meeting_title ILIKE $1
      UNION ALL
      SELECT kind, id, title, NULL FROM items WHERE title ILIKE $1
      UNION ALL

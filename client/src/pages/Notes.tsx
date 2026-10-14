@@ -5,6 +5,11 @@ import NoteForm, { Markdown } from '../NoteForm'
 
 const isLong = (body: string) => body.split('\n').length > 10 || body.length > 500
 
+const localDate = (iso: string) => {
+  const d = new Date(iso)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 // Project filter values: everything, only notes without a project, or one project's id
 type ProjectFilter = 'all' | 'none' | number
 
@@ -56,7 +61,7 @@ export default function Notes() {
   const visible = notes.filter((n) =>
     (!tagFilter || n.tags.includes(tagFilter)) &&
     (projectFilter === 'all' || (projectFilter === 'none' ? n.project_id === null : n.project_id === projectFilter)) &&
-    (!q || n.title.toLowerCase().includes(q) || n.body.toLowerCase().includes(q) || n.tags.some((t) => t.includes(q)) || (n.project_title ?? '').toLowerCase().includes(q)))
+    (!q || n.title.toLowerCase().includes(q) || n.body.toLowerCase().includes(q) || n.tags.some((t) => t.includes(q)) || (n.project_title ?? '').toLowerCase().includes(q) || (n.meeting_title ?? '').toLowerCase().includes(q)))
   const pinnedNotes = visible.filter((n) => n.pinned)
   const otherNotes = visible.filter((n) => !n.pinned)
 
@@ -75,10 +80,20 @@ export default function Notes() {
             <button className="ghost" onClick={() => remove(n)}>Delete</button>
           </div>
         </div>
-        {n.project_id !== null && n.project_title && (
-          <a className={n.project_category === 'personal' ? 'projchip personal' : 'projchip'} href={`#projects:${n.project_id}`} title="Open this project">
-            {n.project_category === 'personal' ? '🏠' : '📋'} {n.project_title} <span aria-hidden>↗</span>
-          </a>
+        {((n.project_id !== null && n.project_title) || (n.meeting_key && n.meeting_title)) && (
+          <div className="chiprow">
+            {n.project_id !== null && n.project_title && (
+              <a className={n.project_category === 'personal' ? 'projchip personal' : 'projchip'} href={`#projects:${n.project_id}`} title="Open this project">
+                {n.project_category === 'personal' ? '🏠' : '📋'} {n.project_title} <span aria-hidden>↗</span>
+              </a>
+            )}
+            {n.meeting_key && n.meeting_title && (
+              <a className="projchip meetingchip" href={n.meeting_start ? `#meetings:${localDate(n.meeting_start)}` : '#meetings'} title="Open this meeting">
+                📅 {n.meeting_title}
+                {n.meeting_start && <> · {new Date(n.meeting_start).toLocaleDateString([], { day: 'numeric', month: 'short' })}</>} <span aria-hidden>↗</span>
+              </a>
+            )}
+          </div>
         )}
         <div className={long && !open_ ? 'clamp' : ''}>
           <Markdown source={n.body} onToggleTask={(i) => patch(n, { body: toggleTask(n.body, i) })} />

@@ -142,3 +142,10 @@ ALTER TABLE notes ADD COLUMN IF NOT EXISTS tags TEXT[] NOT NULL DEFAULT '{}';
 -- Notes can belong to a project (deleting the project keeps the note, just unlinked)
 ALTER TABLE notes ADD COLUMN IF NOT EXISTS project_id INTEGER REFERENCES projects(id) ON DELETE SET NULL;
 CREATE INDEX IF NOT EXISTS notes_project_idx ON notes (project_id);
+
+-- Notes can be about a meeting (yours, or an Outlook one). The title and start are kept with the note,
+-- so it still makes sense if the meeting is deleted or drops out of the Outlook feed.
+ALTER TABLE notes ADD COLUMN IF NOT EXISTS meeting_key TEXT;
+ALTER TABLE notes ADD COLUMN IF NOT EXISTS meeting_title TEXT;
+ALTER TABLE notes ADD COLUMN IF NOT EXISTS meeting_start TIMESTAMPTZ;
+CREATE INDEX IF NOT EXISTS notes_meeting_idx ON notes (meeting_key);

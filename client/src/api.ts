@@ -1,12 +1,15 @@
 export interface Step { id: number; title: string; done: boolean; position: number; due_date: string | null }
 export type Category = 'work' | 'personal'
 export interface Project { id: number; title: string; description: string | null; category: Category; due_date: string | null; created_at: string; updated_at: string; steps: Step[]; notes: ProjectNote[] }
+// A meeting a note belongs to: "item:<id>" for your own meetings, "ics:<id>" for Outlook ones. Title and start are kept with the note.
+export interface MeetingRef { key: string; title: string; start: string | null }
 export interface Note {
   id: number; title: string; body: string; tags: string[]; pinned: boolean; created_at: string; updated_at: string
   project_id: number | null; project_title: string | null; project_category: Category | null
+  meeting_key: string | null; meeting_title: string | null; meeting_start: string | null
 }
-export interface NotePatch { title?: string; body?: string; tags?: string[]; pinned?: boolean; touch?: boolean; project_id?: number | null }
-export interface NoteDraft { title: string; body: string; tags: string[]; pinned: boolean; project_id: number | null }
+export interface NotePatch { title?: string; body?: string; tags?: string[]; pinned?: boolean; touch?: boolean; project_id?: number | null; meeting?: MeetingRef | null }
+export interface NoteDraft { title: string; body: string; tags: string[]; pinned: boolean; project_id: number | null; meeting: MeetingRef | null }
 export interface ProjectNote { id: number; title: string; pinned: boolean; updated_at: string }
 export type Kind = 'task' | 'call' | 'email' | 'message' | 'meeting' | 'reminder'
 export type MessageApp = 'whatsapp' | 'teams'
@@ -129,6 +132,7 @@ export const api = {
   deleteFocus: (id: number) => req<void>('DELETE', `/focus/sessions/${id}`),
   notes: () => req<Note[]>('GET', '/notes'),
   note: (id: number) => req<Note>('GET', `/notes/${id}`),
+  meetingNotes: () => req<Note[]>('GET', '/notes?meeting=1'),
   createNote: (note: NoteDraft) => req<Note>('POST', '/notes', note),
   updateNote: (id: number, patch: NotePatch) => req<Note>('PATCH', `/notes/${id}`, patch),
   deleteNote: (id: number) => req<void>('DELETE', `/notes/${id}`),

@@ -6,6 +6,7 @@ import Activity from './pages/Activity'
 import DailyReview from './pages/DailyReview'
 import History from './pages/History'
 import Links from './pages/Links'
+import Meetings from './pages/Meetings'
 import Settings from './pages/Settings'
 import { Calendar, Footer, Search, Weather, WidgetRail } from './components'
 import { FocusPill } from './focus'
@@ -21,6 +22,7 @@ const PAGES: Record<string, Page> = {
   home: { label: 'Home', icon: '🏠', title: 'Dashboard 🧭', subtitle: 'Your day at a glance', view: Dashboard },
   projects: { label: 'Projects', icon: '📋', title: 'Projects 📋', subtitle: 'Structured Goals & Milestones', view: Projects },
   notes: { label: 'Notes', icon: '📝', title: 'Notes 📝', subtitle: 'Instant Context & Ideas', view: Notes },
+  meetings: { label: 'Meetings', icon: '📅', title: 'Meetings 📅', subtitle: 'Upcoming, past, and your notes', view: Meetings },
   review: { label: 'Daily Review', icon: '🌙', title: 'Daily Review 🌙', subtitle: 'Close the day, plan tomorrow', view: DailyReview },
   history: { label: 'Review History', icon: '📊', title: 'Review History 📊', subtitle: 'Spot patterns in your days', view: History, hidden: true, parent: 'review' },
   activity: { label: 'Activity', icon: '⏱️', title: 'Activity ⏱️', subtitle: 'Focus time log', view: Activity },

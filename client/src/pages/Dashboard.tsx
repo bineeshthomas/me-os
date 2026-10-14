@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { api, type Dashboard as Data, type Focus, type WeekSummary } from '../api'
 import { FocusTimer } from '../focus'
 import { TodaySummary } from '../TodaySummary'
+import { TodayMeetings } from '../TodayMeetings'
 
 const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 const MOODS = ['😞', '🙁', '😐', '🙂', '😄']
@@ -57,6 +58,8 @@ export default function Dashboard() {
   return (
     <>
       <TodaySummary />
+
+      <TodayMeetings />
 
       {week && <ReviewBand week={week} today={today} />}
 
