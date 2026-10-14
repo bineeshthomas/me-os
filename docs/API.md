@@ -13,7 +13,7 @@ The app's own HTTP API (served on localhost only). Paths are relative to `/api`.
 - `GET|POST /api/habits`, `GET|POST /api/goals`, `POST /api/goals/:id/entries`
 - `GET /api/focus/status`, `POST /api/focus/start|stop`, `GET /api/focus/sessions?page=&page_size=`, `PATCH|DELETE /api/focus/sessions/:id`
 - `GET|POST /api/links`, `PATCH|DELETE /api/links/:id`
-- `GET /api/notes[?project_id=]`, `GET|PATCH|DELETE /api/notes/:id`, `POST /api/notes` (notes take an optional `project_id`)
+- `GET /api/notes[?project_id=|?meeting=1|?meeting_key=]`, `GET|PATCH|DELETE /api/notes/:id`, `POST /api/notes` (notes take an optional `project_id` and an optional `meeting: { key, title, start }`; keys are `item:<id>` for your own meetings and `ics:<id>` for Outlook ones)
 - `GET /api/settings` (calendar status, stress level, privacy switches), `PUT /api/settings/privacy` (`{weather?, favicons?}`)
 - `GET /api/export` (everything as a JSON download; the Outlook link is left out)
 - `POST /api/erase` (`{"confirm":"DELETE"}`: permanently deletes all data)
