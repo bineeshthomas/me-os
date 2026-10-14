@@ -13,12 +13,21 @@ const dayLabel = (d: Date | null) => {
   const text = d.toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' })
   return diff === 0 ? `Today · ${text}` : diff === 1 ? `Tomorrow · ${text}` : diff === -1 ? `Yesterday · ${text}` : text
 }
+const keyToDate = (key: string) => { const [y, m, d] = key.split('-').map(Number); return new Date(y, m - 1, d) }
+const addDaysKey = (key: string, n: number) => { const d = keyToDate(key); d.setDate(d.getDate() + n); return dayKey(d) }
+const labelForKey = (key: string) => (key === 'none' ? 'No date' : dayLabel(keyToDate(key)))
+const shortLabel = (key: string) => keyToDate(key).toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' })
+const daysFrom = (from: string, through: string) => { const out: string[] = []; for (let k = from; k <= through; k = addDaysKey(k, 1)) out.push(k); return out }
 const refOf = (m: Meeting): MeetingRef => ({ key: m.key, title: m.title, start: m.start ? m.start.toISOString() : null })
 
 export default function Meetings({ arg }: { arg?: string }) {
   const today = dayKey(new Date())
   const target = arg && /^\d{4}-\d{2}-\d{2}$/.test(arg) ? arg : null // a link from a note: open the right tab at that day
   const [tab, setTab] = useState<'upcoming' | 'past'>(target && target < today ? 'past' : 'upcoming')
+  const tomorrow = addDaysKey(today, 1)
+  const maxThrough = addDaysKey(today, UPCOMING_DAYS - 1) // the furthest ahead Me-OS looks
+  // Upcoming shows today and tomorrow; "Show next day" or the date picker reaches further. A link to a later day opens that far.
+  const [through, setThrough] = useState(() => (target && target > tomorrow && target <= maxThrough ? target : tomorrow))
   const [meetings, setMeetings] = useState<Meeting[]>([])
   const [notes, setNotes] = useState<Note[]>([])
   const [projects, setProjects] = useState<Project[]>([])
@@ -58,7 +67,7 @@ export default function Meetings({ arg }: { arg?: string }) {
     () => meetings.filter((m) => isPast(m, now)).sort((a, b) => b.start!.getTime() - a.start!.getTime()),
     [meetings, now], // eslint-disable-line react-hooks/exhaustive-deps
   )
-  const shown = tab === 'upcoming' ? upcoming : past
+  const upcomingShown = useMemo(() => upcoming.filter((m) => !m.start || dayKey(m.start) <= through), [upcoming, through])
 
   const notesByMeeting = useMemo(() => {
     const map = new Map<string, Note[]>()
@@ -66,11 +75,14 @@ export default function Meetings({ arg }: { arg?: string }) {
     return map
   }, [notes])
 
+  // Upcoming: one card for every day up to `through` (empty days say so); undated meetings last. Past: only days that had meetings.
   const groups = useMemo(() => {
-    const g = new Map<string, Meeting[]>()
-    for (const m of shown) g.set(dayKey(m.start), [...(g.get(dayKey(m.start)) ?? []), m])
-    return [...g.entries()]
-  }, [shown])
+    const byDay = new Map<string, Meeting[]>()
+    for (const m of tab === 'upcoming' ? upcomingShown : past) byDay.set(dayKey(m.start), [...(byDay.get(dayKey(m.start)) ?? []), m])
+    if (tab === 'past') return [...byDay.entries()]
+    const days = daysFrom(today, through).map((k) => [k, byDay.get(k) ?? []] as [string, Meeting[]])
+    return byDay.has('none') ? [...days, ['none', byDay.get('none')!] as [string, Meeting[]]] : days
+  }, [tab, upcomingShown, past, through, today])
 
   // Arrived from a note's meeting chip: scroll to that day and highlight it
   useEffect(() => {
@@ -83,6 +95,7 @@ export default function Meetings({ arg }: { arg?: string }) {
     e.preventDefault()
     try {
       await api.createItem('meeting', title.trim(), new Date(`${date}T${time}`).toISOString())
+      if (date > through && date <= maxThrough) setThrough(date)
       setTitle(''); setAdding(false); setTab('upcoming')
       await load()
     } catch (err) { setError((err as Error).message) }
@@ -159,7 +172,7 @@ export default function Meetings({ arg }: { arg?: string }) {
       )}
 
       <div className="seg mtabs" role="tablist" aria-label="Which meetings">
-        <button role="tab" aria-selected={tab === 'upcoming'} className={tab === 'upcoming' ? 'sel' : ''} onClick={() => setTab('upcoming')}>Upcoming <small>{upcoming.length}</small></button>
+        <button role="tab" aria-selected={tab === 'upcoming'} className={tab === 'upcoming' ? 'sel' : ''} onClick={() => setTab('upcoming')}>Upcoming <small>{upcomingShown.length}</small></button>
         <button role="tab" aria-selected={tab === 'past'} className={tab === 'past' ? 'sel' : ''} onClick={() => setTab('past')}>Past <small>{past.length}</small></button>
       </div>
 
@@ -167,15 +180,32 @@ export default function Meetings({ arg }: { arg?: string }) {
       {loaded && !outlook.connected && <p className="muted"><small>Connect your Outlook calendar in <a href="#settings">Settings</a> to see its meetings here too.</small></p>}
       {tab === 'past' && <p className="muted"><small>Showing the last {PAST_DAYS} days.</small></p>}
 
-      {loaded && shown.length === 0 && (
-        <p className="card empty">{tab === 'upcoming' ? 'No upcoming meetings. Add one, or connect Outlook.' : 'No past meetings in the last 60 days.'}</p>
-      )}
+      {loaded && tab === 'past' && past.length === 0 && <p className="card empty">No past meetings in the last 60 days.</p>}
       {groups.map(([key, list]) => (
         <section key={key} id={`day-${key}`} className="card mday">
-          <h5>{dayLabel(list[0].start)}</h5>
-          <ul className="mlist">{list.map(row)}</ul>
+          <h5>{labelForKey(key)}</h5>
+          {list.length === 0 ? (
+            <p className="dayempty">{key === today ? 'No more meetings today.' : 'No meetings.'}</p>
+          ) : (
+            <ul className="mlist">{list.map(row)}</ul>
+          )}
         </section>
       ))}
+
+      {tab === 'upcoming' && loaded && (
+        <div className="moredays">
+          <button className="navbtn" disabled={through >= maxThrough} onClick={() => setThrough(addDaysKey(through, 1))}>
+            ＋ Show next day{through < maxThrough && ` · ${shortLabel(addDaysKey(through, 1))}`}
+          </button>
+          <label className="jump">
+            or jump to a day
+            <input type="date" className="datein" min={tomorrow} max={maxThrough} value={through > tomorrow ? through : ''}
+              onChange={(e) => e.target.value && setThrough(e.target.value < tomorrow ? tomorrow : e.target.value > maxThrough ? maxThrough : e.target.value)} />
+          </label>
+          {through > tomorrow && <button className="ghost" onClick={() => setThrough(tomorrow)}>Show less</button>}
+          <small className="muted">Looking ahead up to {shortLabel(maxThrough)}.</small>
+        </div>
+      )}
 
       {dlg && (
         <NoteDialog noteId={dlg.noteId} defaultMeeting={refOf(dlg.meeting)} projects={projects} onClose={() => setDlg(null)} onChanged={reloadNotes} />

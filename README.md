@@ -12,7 +12,7 @@ noticed, and how it went. It runs on your own computer, and your data stays ther
 - **Today's summary**: one click copies a short plain-text briefing (top 3, meetings, deadlines, reminders, tasks, calls, messages, check-ins) to paste into your phone's notes or a chat.
 - **Tasks column**: Focus tasks, calls, emails, messages (WhatsApp or Teams) and reminders, always beside you.
 - **Projects**: compact cards with steps you can drag into order, due dates, a Work or Personal type, and notes.
-- **Meetings**: your own and your Outlook meetings in one list, upcoming and past. Add a note to any of them, using the same note editor. The dashboard shows today's meetings.
+- **Meetings**: your own and your Outlook meetings in one list. Upcoming shows today and tomorrow, with a button to reveal each following day. Add a note to any meeting, upcoming or past, using the same note editor. The dashboard shows today's meetings.
 - **Notes**: markdown with tickable checklists, `#tags`, pinning, search, and links to projects and meetings.
 - **Daily Review**: a short nightly ritual: check-ins with streaks, wins, goals moved forward in tiny steps, reflection,
   tomorrow's top 3, and a brain dump. Plus a **History** page with a heatmap of rating, energy and stress.
@@ -29,7 +29,7 @@ noticed, and how it went. It runs on your own computer, and your data stays ther
 |---|---|
 | [![Projects](docs/screenshots/projects.png)](docs/screenshots/projects.png)<br>**Projects**: compact cards with progress, due dates and a pink badge for personal projects. | [![A project open in the editor](docs/screenshots/project-editor.png)](docs/screenshots/project-editor.png)<br>**Project editor**: reorderable steps with due dates, plus the notes that belong to the project. |
 | [![Notes](docs/screenshots/notes.png)](docs/screenshots/notes.png)<br>**Notes**: markdown with tickable checklists, tags, pinning, and links back to projects and meetings. | [![Daily Review](docs/screenshots/daily-review.png)](docs/screenshots/daily-review.png)<br>**Daily Review**: check-ins with streaks, wins, what's unfinished, and goals moved forward in tiny steps. |
-| [![Meetings](docs/screenshots/meetings.png)](docs/screenshots/meetings.png)<br>**Meetings**: yours and Outlook's, with the notes you took under each one. | [![Review History](docs/screenshots/history.png)](docs/screenshots/history.png)<br>**Review History**: a month heatmap of rating, energy or stress, with weekday patterns. |
+| [![Meetings](docs/screenshots/meetings.png)](docs/screenshots/meetings.png)<br>**Meetings**: today and tomorrow first, with the notes you took under each meeting and a button to reveal further days. | [![Review History](docs/screenshots/history.png)](docs/screenshots/history.png)<br>**Review History**: a month heatmap of rating, energy or stress, with weekday patterns. |
 | [![Privacy settings](docs/screenshots/privacy.png)](docs/screenshots/privacy.png)<br>**Privacy**: optional internet features are off until you switch them on, and you can export or erase everything. | |
 
 <p align="center">
