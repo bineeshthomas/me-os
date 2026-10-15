@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS settings (
 -- Messages: a new item kind with the app it should be sent on
 ALTER TABLE items ADD COLUMN IF NOT EXISTS app TEXT CHECK (app IN ('whatsapp', 'teams'));
 ALTER TABLE items DROP CONSTRAINT IF EXISTS items_kind_check;
-ALTER TABLE items ADD CONSTRAINT items_kind_check CHECK (kind IN ('task', 'call', 'email', 'message', 'meeting', 'reminder'));
+ALTER TABLE items ADD CONSTRAINT items_kind_check CHECK (kind IN ('task', 'call', 'email', 'message', 'meeting', 'reminder', 'followup'));
 
 -- Completed items drop off the cards after the day they were ticked
 ALTER TABLE items ADD COLUMN IF NOT EXISTS completed_at TIMESTAMPTZ;
@@ -149,3 +149,12 @@ ALTER TABLE notes ADD COLUMN IF NOT EXISTS meeting_key TEXT;
 ALTER TABLE notes ADD COLUMN IF NOT EXISTS meeting_title TEXT;
 ALTER TABLE notes ADD COLUMN IF NOT EXISTS meeting_start TIMESTAMPTZ;
 CREATE INDEX IF NOT EXISTS notes_meeting_idx ON notes (meeting_key);
+
+-- Reminders became "Follow Up": things you are waiting on others for. A follow up has a tag (who or what), not a date or time.
+-- A reminder that had a time was really a timed to-do, so it becomes a Focus task with a "Notify me by" time: no date is lost.
+ALTER TABLE items ADD COLUMN IF NOT EXISTS tag TEXT;
+UPDATE items SET kind = 'task' WHERE kind = 'reminder' AND due_at IS NOT NULL;
+UPDATE items SET kind = 'followup' WHERE kind = 'reminder';
+UPDATE items SET due_at = NULL WHERE kind = 'followup';
+ALTER TABLE items DROP CONSTRAINT IF EXISTS items_kind_check;
+ALTER TABLE items ADD CONSTRAINT items_kind_check CHECK (kind IN ('task', 'call', 'email', 'message', 'meeting', 'followup'));

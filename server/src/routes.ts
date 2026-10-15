@@ -274,9 +274,24 @@ api.get("/dashboard", async (_req, res) => {
   res.json({ counts: counts.rows[0], projects: projects.rows, notes: notes.rows });
 });
 
-// Widget items: tasks, calls, emails, meetings, reminders
-const KINDS = ["task", "call", "email", "message", "meeting", "reminder"];
+// Widget items: tasks, calls, emails, messages, meetings and follow ups
+const KINDS = ["task", "call", "email", "message", "meeting", "followup"];
 const APPS = ["whatsapp", "teams"];
+
+// "Notify me by": a date and time, or null to clear it. Anything unreadable gives undefined.
+function parseWhen(v: unknown): string | null | undefined {
+  if (v === null || v === undefined || v === "") return null;
+  if (typeof v !== "string" || Number.isNaN(Date.parse(v))) return undefined;
+  return new Date(v).toISOString();
+}
+
+// A follow up's tag: who or what you are waiting on. Trimmed, no leading #, at most 30 characters. Empty clears it.
+function parseTag(v: unknown): string | null | undefined {
+  if (v === null || v === undefined) return null;
+  if (typeof v !== "string") return undefined;
+  const t = v.trim().replace(/^#+/, "").replace(/\s+/g, " ").slice(0, 30);
+  return t || null;
+}
 
 api.get("/items", async (req, res) => {
   const kind = typeof req.query.kind === "string" ? req.query.kind : null;
@@ -288,29 +303,51 @@ api.get("/items", async (req, res) => {
 });
 
 api.post("/items", async (req, res) => {
-  const { kind, title, due_at, app } = req.body ?? {};
+  const { kind, app } = req.body ?? {};
+  const title = typeof req.body?.title === "string" ? req.body.title.trim() : "";
   if (!KINDS.includes(kind)) return res.status(400).json({ error: "invalid kind" });
   if (app != null && !APPS.includes(app)) return res.status(400).json({ error: "invalid app" });
   if (!title) return res.status(400).json({ error: "title is required" });
-  const { rows } = await pool.query("INSERT INTO items (kind, title, due_at, app) VALUES ($1, $2, $3, $4) RETURNING *", [
+  const when = parseWhen(req.body?.due_at);
+  if (when === undefined) return res.status(400).json({ error: "due_at must be a date and time" });
+  const tag = parseTag(req.body?.tag);
+  if (tag === undefined) return res.status(400).json({ error: "tag must be text" });
+  if (kind === "followup" && when) return res.status(400).json({ error: "A follow up has a tag, not a date or time" });
+  if (kind !== "followup" && tag) return res.status(400).json({ error: "Only follow ups have a tag" });
+  const { rows } = await pool.query("INSERT INTO items (kind, title, due_at, app, tag) VALUES ($1, $2, $3, $4, $5) RETURNING *", [
     kind,
     title,
-    due_at || null,
+    when,
     kind === "message" ? (app ?? "whatsapp") : null,
+    tag,
   ]);
   res.status(201).json(rows[0]);
 });
 
+// due_at ("Notify me by") and tag are set exactly as sent: send null to clear them. Anything left out is unchanged.
 api.patch("/items/:id", async (req, res) => {
-  const { title, due_at, done } = req.body ?? {};
+  const { done } = req.body ?? {};
+  if ("title" in (req.body ?? {}) && !String(req.body.title ?? "").trim()) return res.status(400).json({ error: "title is required" });
+  const hasDue = "due_at" in (req.body ?? {});
+  const hasTag = "tag" in (req.body ?? {});
+  const when = parseWhen(req.body?.due_at);
+  const tag = parseTag(req.body?.tag);
+  if (hasDue && when === undefined) return res.status(400).json({ error: "due_at must be a date and time" });
+  if (hasTag && tag === undefined) return res.status(400).json({ error: "tag must be text" });
+  const current = await pool.query("SELECT kind FROM items WHERE id = $1", [req.params.id]);
+  if (!current.rows[0]) return res.status(404).json({ error: "not found" });
+  const kind = current.rows[0].kind;
+  if (hasDue && kind === "followup" && when) return res.status(400).json({ error: "A follow up has a tag, not a date or time" });
+  if (hasTag && kind !== "followup" && tag) return res.status(400).json({ error: "Only follow ups have a tag" });
   const { rows } = await pool.query(
-    `UPDATE items SET title = COALESCE($2, title), due_at = COALESCE($3, due_at), done = COALESCE($4::boolean, done),
-       completed_at = CASE WHEN $4::boolean IS TRUE THEN COALESCE(completed_at, now())
-                           WHEN $4::boolean IS FALSE THEN NULL ELSE completed_at END
+    `UPDATE items SET title = COALESCE($2, title), done = COALESCE($3::boolean, done),
+       due_at = CASE WHEN $4::boolean THEN $5::timestamptz ELSE due_at END,
+       tag = CASE WHEN $6::boolean THEN $7 ELSE tag END,
+       completed_at = CASE WHEN $3::boolean IS TRUE THEN COALESCE(completed_at, now())
+                           WHEN $3::boolean IS FALSE THEN NULL ELSE completed_at END
      WHERE id = $1 RETURNING *`,
-    [req.params.id, title ?? null, due_at ?? null, done ?? null],
+    [req.params.id, typeof req.body?.title === "string" ? req.body.title.trim() : null, done ?? null, hasDue, when ?? null, hasTag, tag ?? null],
   );
-  if (!rows[0]) return res.status(404).json({ error: "not found" });
   res.json(rows[0]);
 });
 
@@ -331,7 +368,7 @@ api.get("/search", async (req, res) => {
      UNION ALL
      SELECT 'note', id, title, LEFT(body, 120) FROM notes WHERE title ILIKE $1 OR body ILIKE $1 OR array_to_string(tags, ' ') ILIKE $1 OR meeting_title ILIKE $1
      UNION ALL
-     SELECT kind, id, title, NULL FROM items WHERE title ILIKE $1
+     SELECT kind, id, title, tag FROM items WHERE title ILIKE $1 OR tag ILIKE $1
      UNION ALL
      SELECT 'link', id, name, url FROM links WHERE name ILIKE $1 OR url ILIKE $1
      LIMIT 30`,

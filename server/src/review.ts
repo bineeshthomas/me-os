@@ -33,7 +33,7 @@ review.get("/review/:date", async (req, res) => {
                 FROM goals g WHERE g.achieved_at IS NULL OR g.achieved_at::date >= $1::date ORDER BY g.created_at`, [date]),
     pool.query("SELECT id, goal_id, points, note FROM goal_entries WHERE date = $1 ORDER BY id", [date]),
     pool.query("SELECT title FROM items WHERE done AND completed_at::date = $1::date ORDER BY completed_at", [date]),
-    pool.query(`SELECT id, kind, title, due_at, app FROM items
+    pool.query(`SELECT id, kind, title, due_at, app, tag FROM items
                 WHERE NOT done AND kind <> 'meeting' ORDER BY due_at NULLS LAST, id`),
     pool.query("SELECT to_char(date, 'YYYY-MM-DD') AS date FROM daily_reviews WHERE completed_at IS NOT NULL AND date <= $1", [date]),
     pool.query(
@@ -97,7 +97,7 @@ review.put("/review/:date", async (req, res) => {
     [date, ...vals],
   );
 
-  // Finishing the day rolls unfinished dated items (e.g. reminders) over to the next day, keeping their time.
+  // Finishing the day rolls unfinished items with a "Notify me by" time over to the next day, keeping their time.
   // Undated items aren't tied to a day, so they simply stay open. Meetings are events and never move.
   let rolled = 0;
   if (b.complete === true) {

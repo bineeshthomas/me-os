@@ -4,13 +4,13 @@
 noticed, and how it went. It runs on your own computer, and your data stays there.
 
 
-![Me-OS dashboard: tasks and reminders on the left, a focus timer, a six-night review streak and today's top three priorities](docs/screenshots/dashboard.png)
+![Me-OS dashboard: tasks and follow ups on the left, a focus timer, a nine-night review streak and today's top three priorities](docs/screenshots/dashboard.png)
 
 ## What it does
 
 - **Dashboard**: your day at a glance, with a 7-night review strip, a focus timer and today's top priorities.
-- **Today's summary**: one click copies a short plain-text briefing (top 3, meetings, deadlines, reminders, tasks, calls, messages, check-ins) to paste into your phone's notes or a chat.
-- **Tasks column**: Focus tasks, calls, emails, messages (WhatsApp or Teams) and reminders, always beside you.
+- **Today's summary**: one click copies a short plain-text briefing (top 3, meetings, deadlines, tasks, follow ups, calls, messages, check-ins) to paste into your phone's notes or a chat.
+- **Tasks column**: Focus tasks (with an optional "Notify me by" date and time), calls, emails, messages (WhatsApp or Teams) and Follow Ups, always beside you. A follow up is something you are waiting on from someone else, tagged with who or what, and filterable by tag.
 - **Projects**: compact cards with steps you can drag into order, due dates, a Work or Personal type, and notes.
 - **Meetings**: your own and your Outlook meetings in one list. Upcoming shows today and tomorrow, with a button to reveal each following day. Add a note to any meeting, upcoming or past, using the same note editor. The dashboard shows today's meetings.
 - **Notes**: markdown with tickable checklists, `#tags`, pinning, search, and links to projects and meetings.

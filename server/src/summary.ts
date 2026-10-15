@@ -61,13 +61,16 @@ summary.get("/summary/today", async (req, res) => {
 
   const open = (kind: string) => items.rows.filter((i) => i.kind === kind);
   const appName = (a: string | null) => (a === "whatsapp" ? " (WhatsApp)" : a === "teams" ? " (Teams)" : "");
-  const reminders = open("reminder")
-    .filter((r) => !r.due_at || dayString(new Date(r.due_at), tz) <= today)
-    .map((r) => {
-      if (!r.due_at) return r.title;
-      const d = dayString(new Date(r.due_at), tz);
-      return d < today ? `${r.title} (overdue ${daysBetween(d, today)}d)` : `${timeOf(new Date(r.due_at))} ${r.title}`;
-    });
+  // Focus tasks, with their optional "Notify me by" time: due now or overdue first, then the untimed, then the ones for later days
+  const dayShort = (d: Date) => new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", timeZone: tz }).format(d);
+  const taskRows = open("task").map((t) => ({ t, d: t.due_at ? dayString(new Date(t.due_at), tz) : null }));
+  const byTime = (a: { t: { due_at: string } }, b: { t: { due_at: string } }) => new Date(a.t.due_at).getTime() - new Date(b.t.due_at).getTime();
+  const tasks = [
+    ...taskRows.filter((r) => r.d && r.d <= today).sort(byTime).map((r) => (r.d! < today ? `${r.t.title} (overdue ${daysBetween(r.d!, today)}d)` : `${timeOf(new Date(r.t.due_at))} ${r.t.title}`)),
+    ...taskRows.filter((r) => !r.d).map((r) => r.t.title),
+    ...taskRows.filter((r) => r.d && r.d > today).sort(byTime).map((r) => `${r.t.title} (notify ${dayShort(new Date(r.t.due_at))})`),
+  ];
+  const followUps = open("followup").map((f) => (f.tag ? `${f.title} (${f.tag})` : f.title));
 
   const deadlines: string[] = [];
   const dueText = (due: string) => (due === today ? "due today" : `overdue ${daysBetween(due, today)}d`);
@@ -92,11 +95,11 @@ summary.get("/summary/today", async (req, res) => {
   add("🎯 TOP 3", top3, true);
   add("📅 MEETINGS", meetings.map((m) => m.text));
   add("⏰ DEADLINES", deadlines);
-  add("🔔 REMINDERS", reminders);
-  add("✅ TASKS", open("task").map((t) => t.title));
+  add("✅ TASKS", tasks);
   add("📞 CALLS", open("call").map((t) => t.title));
   add("✉️ EMAILS", open("email").map((t) => t.title));
   add("💬 MESSAGES", open("message").map((t) => `${t.title}${appName(t.app)}`));
+  add("🤝 FOLLOW UP", followUps);
   add("🔁 CHECK-INS", todo);
 
   const text = `☀️ ${label}\n\n${blocks.length ? blocks.join("\n\n") : "Nothing planned for today. Enjoy the open day. 🎉"}`;

@@ -5,7 +5,7 @@ The app's own HTTP API (served on localhost only). Paths are relative to `/api`.
 - `GET /api/dashboard`
 - `GET|POST /api/projects`, `PATCH|DELETE /api/projects/:id`, `PUT /api/projects/:id/steps/order`, `GET /api/deadlines?from=&to=`
 - `POST /api/projects/:id/steps`, `PATCH|DELETE /api/steps/:id`
-- `GET|POST /api/items`, `PATCH|DELETE /api/items/:id`
+- `GET|POST /api/items`, `PATCH|DELETE /api/items/:id`. Kinds: `task`, `call`, `email`, `message`, `followup`. Only a `task` may have `due_at` (the optional "Notify me by" time; stored and shown, no pop-up yet). Only a `followup` may have a `tag` (who or what you are waiting on). Send `null` to clear either.
 - `GET /api/settings`, `PUT /api/settings/calendar`, `PUT /api/settings/stress`
 - `GET /api/search?q=`
 - `GET /api/review-history?month=YYYY-MM`

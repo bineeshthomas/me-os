@@ -1,6 +1,6 @@
 import { pool } from "./db/pool.js";
 
-// Moves unfinished dated items (reminders etc.) due on or before `date` to the day after it, keeping their time
+// Moves unfinished items with a "Notify me by" time (focus tasks etc.) due on or before `date` to the day after it, keeping their time
 // of day. Items with no date aren't tied to a day, and meetings are calendar events, so neither moves.
 export async function rollOverThrough(date: string): Promise<number> {
   const r = await pool.query(

@@ -11,9 +11,10 @@ export interface Note {
 export interface NotePatch { title?: string; body?: string; tags?: string[]; pinned?: boolean; touch?: boolean; project_id?: number | null; meeting?: MeetingRef | null }
 export interface NoteDraft { title: string; body: string; tags: string[]; pinned: boolean; project_id: number | null; meeting: MeetingRef | null }
 export interface ProjectNote { id: number; title: string; pinned: boolean; updated_at: string }
-export type Kind = 'task' | 'call' | 'email' | 'message' | 'meeting' | 'reminder'
+export type Kind = 'task' | 'call' | 'email' | 'message' | 'meeting' | 'followup'
 export type MessageApp = 'whatsapp' | 'teams'
-export interface Item { id: number; kind: Kind; title: string; due_at: string | null; done: boolean; completed_at: string | null; app: MessageApp | null }
+// due_at is the optional "Notify me by" time on a task. A follow up has a tag (who or what you're waiting on) and no time.
+export interface Item { id: number; kind: Kind; title: string; due_at: string | null; done: boolean; completed_at: string | null; app: MessageApp | null; tag: string | null }
 export interface SearchHit { type: 'project' | 'step' | 'note' | 'link' | Kind; id: number; title: string; snippet: string | null }
 export interface CalEvent { id: string; title: string; start: string; end: string; allDay: boolean; location: string | null }
 export interface PrivacySettings { weather: boolean; favicons: boolean }
@@ -26,7 +27,7 @@ export interface ReviewRow {
   date: string; wins: string; went_well: string; blocker: string; learned: string; priorities: string[]
   brain_dump: string; gratitude: string; rating: number | null; energy: number | null; stress: number | null; completed_at: string | null
 }
-export interface OpenItem { id: number; kind: Kind; title: string; due_at: string | null; app: MessageApp | null }
+export interface OpenItem { id: number; kind: Kind; title: string; due_at: string | null; app: MessageApp | null; tag: string | null }
 export interface ReviewDay {
   date: string; review: ReviewRow | null; habits: Habit[]; goals: Goal[]; wins: string[]
   open_items: OpenItem[]; points_today: number; focus_seconds: number; review_streak: number
@@ -91,8 +92,10 @@ export const api = {
   setStepDone: (id: number, done: boolean) => req<Step>('PATCH', `/steps/${id}`, { done }),
   deleteStep: (id: number) => req<void>('DELETE', `/steps/${id}`),
   items: () => req<Item[]>('GET', '/items'),
-  createItem: (kind: Kind, title: string, due_at: string | null, app?: MessageApp) =>
-    req<Item>('POST', '/items', { kind, title, due_at, app }),
+  createItem: (kind: Kind, title: string, due_at: string | null, app?: MessageApp, tag?: string | null) =>
+    req<Item>('POST', '/items', { kind, title, due_at, app, tag }),
+  setItemNotify: (id: number, due_at: string | null) => req<Item>('PATCH', `/items/${id}`, { due_at }),
+  setItemTag: (id: number, tag: string | null) => req<Item>('PATCH', `/items/${id}`, { tag }),
   setItemDone: (id: number, done: boolean) => req<Item>('PATCH', `/items/${id}`, { done }),
   deleteItem: (id: number) => req<void>('DELETE', `/items/${id}`),
   search: (q: string) => req<SearchHit[]>('GET', `/search?q=${encodeURIComponent(q)}`),

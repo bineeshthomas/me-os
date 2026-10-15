@@ -37,7 +37,7 @@ function Section({ id, title, hint, extra, children }: { id: string; title: stri
   )
 }
 
-const KIND_ICON: Record<string, string> = { task: '✅', call: '📞', email: '✉️', message: '💬', reminder: '🔔' }
+const KIND_ICON: Record<string, string> = { task: '✅', call: '📞', email: '✉️', message: '💬', followup: '🤝' }
 const MOODS = ['😞', '🙁', '😐', '🙂', '😄']
 const STEPS = [1, 2, 5, 10]
 
@@ -273,7 +273,7 @@ function OpenItems({ day }: { day: ReviewDay }) {
       <ul className="steps">
         {day.open_items.map((i) => (
           <li key={i.id}>
-            <span>{KIND_ICON[i.kind]} {i.title}{i.due_at && <small> · due {new Date(i.due_at).toLocaleDateString([], { day: 'numeric', month: 'short' })}</small>}</span>
+            <span>{KIND_ICON[i.kind]} {i.title}{i.due_at && <small> · notify {new Date(i.due_at).toLocaleDateString([], { day: 'numeric', month: 'short' })}</small>}{i.tag && <small> · #{i.tag}</small>}</span>
           </li>
         ))}
       </ul>

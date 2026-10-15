@@ -1,13 +1,14 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
 import { usePrivacy } from './privacy'
 import { api, type CalEvent, type Deadline, type Item, type Kind, type MessageApp, type SearchHit } from './api'
 
-const WIDGETS: { kind: Kind; label: string; icon: string; empty: string; timed: boolean; apps?: boolean }[] = [
-  { kind: 'task', label: 'Focus Tasks', icon: '✅', empty: 'Nothing pressing.', timed: false },
-  { kind: 'call', label: 'Calls', icon: '📞', empty: 'Nothing on the phone today.', timed: false },
-  { kind: 'email', label: 'Emails', icon: '✉️', empty: 'Nothing queued.', timed: false },
-  { kind: 'message', label: 'Messages', icon: '💬', empty: 'No messages to send.', timed: false, apps: true },
-  { kind: 'reminder', label: 'Reminders', icon: '🔔', empty: 'All clear.', timed: true },
+// notify = the optional "Notify me by" date and time. tags = a tag for what/who you're waiting on (follow ups have no date).
+const WIDGETS: { kind: Kind; noun: string; label: string; icon: string; empty: string; notify?: boolean; tags?: boolean; apps?: boolean }[] = [
+  { kind: 'task', noun: 'task', label: 'Focus Tasks', icon: '✅', empty: 'Nothing pressing.', notify: true },
+  { kind: 'call', noun: 'call', label: 'Calls', icon: '📞', empty: 'Nothing on the phone today.' },
+  { kind: 'email', noun: 'email', label: 'Emails', icon: '✉️', empty: 'Nothing queued.' },
+  { kind: 'message', noun: 'message', label: 'Messages', icon: '💬', empty: 'No messages to send.', apps: true },
+  { kind: 'followup', noun: 'follow up', label: 'Follow Up', icon: '🤝', empty: "Nobody to chase. You're not waiting on anyone.", tags: true },
 ]
 
 const fmt = (iso: string) =>
@@ -39,39 +40,97 @@ export function AppIcon({ app, size = 18 }: { app: MessageApp; size?: number }) 
 const evTime = (e: CalEvent) =>
   e.allDay ? 'All day' : new Date(e.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 
-function ItemRow({ item: i, reload }: { item: Item; reload: () => void }) {
+const pad = (n: number) => String(n).padStart(2, '0')
+const toLocalInput = (iso: string) => {
+  const d = new Date(iso)
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+// One task/call/email/message/follow up. Tasks can have a "Notify me by" time; follow ups can have a tag. Both are editable here.
+function ItemRow({ item: i, reload, tagOptions, activeTag, onTag }: {
+  item: Item; reload: () => void; tagOptions: string[]; activeTag: string | null; onTag: (t: string | null) => void
+}) {
+  const [editing, setEditing] = useState(false)
+  const [value, setValue] = useState('')
+  const listId = useId()
+  const overdue = !!i.due_at && !i.done && new Date(i.due_at).getTime() < Date.now()
+
+  const startEdit = () => { setValue(i.kind === 'task' ? (i.due_at ? toLocalInput(i.due_at) : '') : (i.tag ?? '')); setEditing(true) }
+  const save = async (clear = false) => {
+    if (i.kind === 'task') await api.setItemNotify(i.id, clear || !value ? null : new Date(value).toISOString())
+    else await api.setItemTag(i.id, clear ? null : value.trim() || null)
+    setEditing(false)
+    reload()
+  }
+
   return (
     <li className={i.done ? 'done' : ''}>
       <button className="circle" aria-label="Toggle" onClick={() => api.setItemDone(i.id, !i.done).then(reload)}>{i.done ? '✓' : ''}</button>
-      <span>{i.app && <AppIcon app={i.app} size={14} />} {i.title}{i.due_at && <small> · {fmt(i.due_at)}</small>}</span>
+      <span>
+        {i.app && <AppIcon app={i.app} size={14} />} {i.title}
+        {i.kind === 'task' && i.due_at && (
+          <button className={overdue ? 'notify late' : 'notify'} title="Notify me by. Click to change" onClick={startEdit}>🔔 {fmt(i.due_at)}</button>
+        )}
+        {i.kind === 'followup' && i.tag && (
+          <button className={activeTag?.toLowerCase() === i.tag.toLowerCase() ? 'tagchip sel' : 'tagchip'} title="Show only this tag"
+            onClick={() => onTag(activeTag?.toLowerCase() === i.tag!.toLowerCase() ? null : i.tag)}>#{i.tag}</button>
+        )}
+      </span>
+      {i.kind === 'task' && !i.due_at && <button className="ghost mini" aria-label="Set Notify me by" title="Notify me by" onClick={startEdit}>🔔</button>}
+      {i.kind === 'followup' && <button className="ghost mini" aria-label={i.tag ? 'Change tag' : 'Add a tag'} title={i.tag ? 'Change tag' : 'Add a tag'} onClick={startEdit}>🏷</button>}
       <button className="ghost" aria-label="Delete" onClick={() => api.deleteItem(i.id).then(reload)}>✕</button>
+      {editing && (
+        <form className="rowedit" onSubmit={(e) => { e.preventDefault(); save() }} onKeyDown={(e) => e.key === 'Escape' && setEditing(false)}>
+          {i.kind === 'task' ? (
+            <label>Notify me by <input autoFocus type="datetime-local" value={value} onChange={(e) => setValue(e.target.value)} /></label>
+          ) : (
+            <label>Tag <input autoFocus list={listId} maxLength={30} placeholder="Who or what are you waiting on?" value={value} onChange={(e) => setValue(e.target.value)} />
+              <datalist id={listId}>{tagOptions.map((t) => <option key={t} value={t} />)}</datalist>
+            </label>
+          )}
+          <div className="actions">
+            <button className="primary">Save</button>
+            {(i.due_at || i.tag) && <button type="button" className="ghost" onClick={() => save(true)}>Clear</button>}
+            <button type="button" className="ghost" onClick={() => setEditing(false)}>Cancel</button>
+          </div>
+        </form>
+      )}
     </li>
   )
 }
 
-function Widget({ cfg, items, reload }: { cfg: (typeof WIDGETS)[number]; items: Item[]; reload: () => void }) {
+function Widget({ cfg, items, reload, tagOptions }: { cfg: (typeof WIDGETS)[number]; items: Item[]; reload: () => void; tagOptions: string[] }) {
   const [adding, setAdding] = useState(false)
   const [title, setTitle] = useState('')
   const [due, setDue] = useState('')
+  const [tag, setTag] = useState('')
+  const [tagFilter, setTagFilter] = useState<string | null>(null)
   const [app, setApp] = useState<MessageApp>('whatsapp')
+  const listId = useId()
 
   const add = async (e: FormEvent) => {
     e.preventDefault()
     if (!title.trim()) return
-    await api.createItem(cfg.kind, title.trim(), due ? new Date(due).toISOString() : null, cfg.apps ? app : undefined)
-    setTitle(''); setDue(''); setAdding(false)
+    await api.createItem(cfg.kind, title.trim(), cfg.notify && due ? new Date(due).toISOString() : null, cfg.apps ? app : undefined, cfg.tags ? tag.trim() || null : undefined)
+    setTitle(''); setDue(''); setTag(''); setAdding(false)
     reload()
   }
+
+  // Follow up tags in use on this card (case-insensitive), to filter by
+  const tagCounts = new Map<string, { label: string; n: number }>()
+  if (cfg.tags) for (const i of items) if (i.tag) { const k = i.tag.toLowerCase(); tagCounts.set(k, { label: tagCounts.get(k)?.label ?? i.tag, n: (tagCounts.get(k)?.n ?? 0) + 1 }) }
+  const activeKey = tagFilter?.toLowerCase() ?? null
+  const shown = activeKey && tagCounts.has(activeKey) ? items.filter((i) => i.tag?.toLowerCase() === activeKey) : items
 
   return (
     <section className="card widget">
       <div className="head">
         <h4>{cfg.icon} {cfg.label}</h4>
-        <button className="ghost" aria-label={`Add ${cfg.kind}`} onClick={() => setAdding(!adding)}>＋</button>
+        <button className="ghost" aria-label={`Add ${cfg.noun}`} onClick={() => setAdding(!adding)}>＋</button>
       </div>
       {adding && (
         <form onSubmit={add} className="form">
-          <input autoFocus placeholder={`New ${cfg.kind}…`} value={title} onChange={(e) => setTitle(e.target.value)} />
+          <input autoFocus placeholder={`New ${cfg.noun}…`} value={title} onChange={(e) => setTitle(e.target.value)} />
           {cfg.apps && (
             <div className="apps" role="radiogroup" aria-label="Send via">
               {APPS.map((a) => (
@@ -81,13 +140,31 @@ function Widget({ cfg, items, reload }: { cfg: (typeof WIDGETS)[number]; items: 
               ))}
             </div>
           )}
-          {cfg.timed && <input type="datetime-local" value={due} onChange={(e) => setDue(e.target.value)} />}
+          {cfg.notify && (
+            <label className="fieldlabel">Notify me by <small className="muted">(optional)</small>
+              <input type="datetime-local" value={due} onChange={(e) => setDue(e.target.value)} />
+            </label>
+          )}
+          {cfg.tags && (
+            <label className="fieldlabel">Tag <small className="muted">(who or what you're waiting on)</small>
+              <input list={listId} maxLength={30} placeholder="e.g. Rao, Legal, Supplier" value={tag} onChange={(e) => setTag(e.target.value)} />
+              <datalist id={listId}>{tagOptions.map((t) => <option key={t} value={t} />)}</datalist>
+            </label>
+          )}
           <button className="primary">Add</button>
         </form>
       )}
+      {tagCounts.size > 0 && (
+        <div className="tagfilter widgettags">
+          <button className={!activeKey ? 'tag sel' : 'tag'} onClick={() => setTagFilter(null)}>All</button>
+          {[...tagCounts.entries()].map(([k, v]) => (
+            <button key={k} className={activeKey === k ? 'tag sel' : 'tag'} onClick={() => setTagFilter(activeKey === k ? null : v.label)}>#{v.label} <small>{v.n}</small></button>
+          ))}
+        </div>
+      )}
       {items.length === 0 && !adding && <p className="empty">{cfg.empty}</p>}
       <ul className="steps">
-        {items.map((i) => <ItemRow key={i.id} item={i} reload={reload} />)}
+        {shown.map((i) => <ItemRow key={i.id} item={i} reload={reload} tagOptions={tagOptions} activeTag={tagFilter} onTag={setTagFilter} />)}
       </ul>
     </section>
   )
@@ -104,10 +181,13 @@ export function WidgetRail() {
   const [items, setItems] = useState<Item[]>([])
   const load = () => api.items().then(setItems).catch(() => {})
   useEffect(() => { load() }, [])
+  // Tags already used on follow ups, offered as suggestions when adding or changing one
+  const seen = new Set<string>()
+  const tagOptions = items.filter((i) => i.kind === 'followup' && i.tag).map((i) => i.tag!).filter((t) => !seen.has(t.toLowerCase()) && seen.add(t.toLowerCase()))
   return (
     <aside className="rail">
       {WIDGETS.map((w) => (
-        <Widget key={w.kind} cfg={w} items={items.filter((i) => i.kind === w.kind && visible(i))} reload={load} />
+        <Widget key={w.kind} cfg={w} items={items.filter((i) => i.kind === w.kind && visible(i))} reload={load} tagOptions={tagOptions} />
       ))}
     </aside>
   )
@@ -243,7 +323,7 @@ export function Calendar({ onClose }: { onClose: () => void }) {
   const dayItems = forDay(selected)
   const dayEvents = eventsOn(selected)
   const dayDeadlines = deadlinesOn(selected)
-  const icons: Record<string, string> = { task: '✅', call: '📞', email: '✉️', message: '💬', meeting: '📅', reminder: '🔔' }
+  const icons: Record<string, string> = { task: '✅', call: '📞', email: '✉️', message: '💬', meeting: '📅', followup: '🤝' }
 
   return (
     <div className="overlay" onClick={onClose}>
